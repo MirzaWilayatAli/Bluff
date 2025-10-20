@@ -88,6 +88,10 @@ public class DeckManager : NetworkBehaviour
         }
 
         Debug.Log($"Dealt all {deck.Count} cards to players!");
+        foreach (PlayerManager player in players)
+        {
+            player.UpdateAllCardVisibilityClientRpc();
+        }
     }
 
 }

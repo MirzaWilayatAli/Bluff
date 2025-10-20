@@ -83,6 +83,7 @@ public class PlayerManager : NetworkBehaviour
             DeckManager.Instance.RegisterPlayer(this);
             TurnManager.Instance.RegisterPlayer(this);
         }
+        UpdateCardsVisibility();
     }
 
     [ClientRpc]
@@ -91,11 +92,40 @@ public class PlayerManager : NetworkBehaviour
         NetworkObject cardNetObj = NetworkManager.Singleton.SpawnManager.SpawnedObjects[cardId];
         hand.Add(cardNetObj.gameObject);
         Debug.Log($"Player {OwnerClientId} received card on client. Total: {hand.Count}");
+        UpdateCardsVisibility();
     }
 
     // Simple check if this player owns the card
     public bool OwnsCard(GameObject card)
     {
         return hand.Contains(card);
+    }
+    private void UpdateCardsVisibility()
+    {
+        if (!IsOwner) return;
+    
+        // Get all cards in the scene
+        Card[] allCards = FindObjectsByType<Card>(FindObjectsInactive.Exclude,FindObjectsSortMode.None);
+    
+        foreach (Card card in allCards)
+        {
+            if (hand.Contains(card.gameObject))
+            {
+                // Show front of cards I own
+                card.ShowFront();
+            }
+            else
+            {
+                // Show back of other players' cards
+                card.ShowBack();
+            }
+        }
+    
+        Debug.Log($"Player {OwnerClientId} updated card visibility - can see {hand.Count} cards");
+    }
+    [ClientRpc]
+    public void UpdateAllCardVisibilityClientRpc()
+    {
+        UpdateCardsVisibility();
     }
 }
