@@ -4,8 +4,9 @@ using System.Collections.Generic;
 
 public class DeckManager : NetworkBehaviour
 {
-    [SerializeField] private List<GameObject> deck = new List<GameObject>();
-    private List<GameObject> asideCards = new List<GameObject>();
+    [SerializeField] private List<Card> deck = new List<Card>();
+    private List<Card> asideCards = new List<Card>();
+    private List<PlayerManager> connectedPlayers = new List<PlayerManager>(); // DYNAMIC list!
 
     public static DeckManager Instance { get; private set; }
 
@@ -20,35 +21,19 @@ public class DeckManager : NetworkBehaviour
             Destroy(gameObject);
         }
     }
-    private void Start()
+
+    // Players register themselves when they join
+    public void RegisterPlayer(PlayerManager player)
     {
-        // Clear any old entries
-        deck.Clear();
-
-        // Find all active GameObjects in the scene (use Scene handle + IncludeInactive if needed)
-        GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-
-        foreach (GameObject obj in allObjects)
+        if (!connectedPlayers.Contains(player))
         {
-            // Only check objects with NetworkObject (so we only pick up cards)
-            if (obj.GetComponent<NetworkObject>() != null)
-            {
-                string name = obj.name;
-
-                // Check if name starts with a valid suit
-                if (name.StartsWith("Heart") || name.StartsWith("Club") || name.StartsWith("Diamond") || name.StartsWith("Spade"))
-                {
-                    deck.Add(obj);
-                }
-            }
+            connectedPlayers.Add(player);
         }
-
-        Debug.Log($"Deck initialized with {deck.Count} cards.");
     }
 
     private void Update()
     {
-        if (IsServer) // only server controls deck
+        if (IsServer)
         {
             if (Input.GetKeyDown(KeyCode.S))
             {
@@ -57,48 +42,18 @@ public class DeckManager : NetworkBehaviour
 
             if (Input.GetKeyDown(KeyCode.D))
             {
-                // Build a list of test players
-                List<GameObject> testPlayers = new List<GameObject>
-            {
-                GameObject.Find("Player1"),
-                GameObject.Find("Player2")
-            };
-
-                DealCards(testPlayers);
-            }
-
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                ResetDeck();
+                // Now deals to ACTUAL connected players, not static objects
+                DealCardsToPlayers(connectedPlayers);
             }
         }
     }
 
-
-    public void SetupDeck()
-    {
-        if (deck == null || deck.Count == 0)
-        {
-            Debug.LogError("Deck is empty, please assign cards in inspector!");
-            return;
-        }
-
-        foreach (GameObject obj in deck)
-        {
-            if (obj.GetComponent<NetworkObject>() == null)
-            {
-                Debug.LogError("Card is missing NetworkObject component!");
-                return;
-            }
-        }
-    }
-
-    // Shuffle the deck using Fisher–Yates algorithm.
+    // Shuffle the deck using Fisher-Yates algorithm.
     public void ShuffleDeck()
     {
         for (int i = 0; i < deck.Count; i++)
         {
-            GameObject temp = deck[i];
+            Card temp = deck[i];
             int rand = Random.Range(i, deck.Count);
             deck[i] = deck[rand];
             deck[rand] = temp;
@@ -107,44 +62,32 @@ public class DeckManager : NetworkBehaviour
         Debug.Log("Deck shuffled!");
     }
 
-    // Distribute cards equally to all players.
-    public void DealCards(List<GameObject> playerObjects)
+    public void DealCardsToPlayers(List<PlayerManager> players)
     {
-        if (!IsServer) return; // Only server should deal cards
+        if (!IsServer) return;
 
-        int playerCount = playerObjects.Count;
-        if (playerCount == 0)
-        {
-            Debug.LogError("No players to deal cards to!");
-            return;
-        }
+        Debug.Log($"Dealing cards to {players.Count} players...");
 
         int cardIndex = 0;
-
-        // Loop through deck and assign cards round-robin
-        foreach (GameObject card in deck)
+        foreach (Card card in deck)
         {
-            // Get current player
-            GameObject player = playerObjects[cardIndex % playerCount];
-
-            // Spawn the card on the network
+            PlayerManager player = players[cardIndex % players.Count];
             NetworkObject cardNetObj = card.GetComponent<NetworkObject>();
+
             if (!cardNetObj.IsSpawned)
             {
                 cardNetObj.Spawn(true);
             }
 
-            Vector3 offset = new Vector3((cardIndex / playerCount) * 0.5f, 0, 10);
-            card.transform.position = player.transform.position + offset;
+            cardNetObj.ChangeOwnership(player.OwnerClientId);
+
+            // Call this on both server and client
+            player.AddCardToHandClientRpc(cardNetObj.NetworkObjectId);
 
             cardIndex++;
         }
 
-        Debug.Log("Cards dealt to " + playerCount + " players!");
+        Debug.Log($"Dealt all {deck.Count} cards to players!");
     }
 
-    public void ResetDeck()
-    {
-        
-    }
 }
