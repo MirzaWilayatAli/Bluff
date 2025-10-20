@@ -8,6 +8,8 @@ public class Card : MonoBehaviour
     public Sprite frontSprite;
     public Sprite backSprite;
     private SpriteRenderer spriteRenderer;
+    private Vector3 originalScale;
+    private Color originalColor;
     
     private void Start()
     {
@@ -23,11 +25,5 @@ public class Card : MonoBehaviour
     public void ShowBack()
     {
         spriteRenderer.sprite = backSprite;
-    }
-    
-    // Helper to get card info
-    public string GetCardName()
-    {
-        return $"{rank}";
     }
 }

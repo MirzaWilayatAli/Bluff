@@ -81,17 +81,17 @@ public class DeckManager : NetworkBehaviour
 
             cardNetObj.ChangeOwnership(player.OwnerClientId);
 
-            // Call this on both server and client
             player.AddCardToHandClientRpc(cardNetObj.NetworkObjectId);
 
             cardIndex++;
         }
 
         Debug.Log($"Dealt all {deck.Count} cards to players!");
-        foreach (PlayerManager player in players)
-        {
-            player.UpdateAllCardVisibilityClientRpc();
-        }
+    }
+    
+    public List<PlayerManager> GetAllPlayers()
+    {
+        return new List<PlayerManager>(connectedPlayers);
     }
 
 }
