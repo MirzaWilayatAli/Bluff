@@ -6,7 +6,7 @@ public class DeckManager : NetworkBehaviour
 {
     [SerializeField] private List<Card> deck = new List<Card>();
     private List<Card> asideCards = new List<Card>();
-    private List<PlayerManager> connectedPlayers = new List<PlayerManager>(); // DYNAMIC list!
+    private List<PlayerManager> connectedPlayers = new List<PlayerManager>();
 
     public static DeckManager Instance { get; private set; }
 
@@ -22,7 +22,6 @@ public class DeckManager : NetworkBehaviour
         }
     }
 
-    // Players register themselves when they join
     public void RegisterPlayer(PlayerManager player)
     {
         if (!connectedPlayers.Contains(player))
@@ -42,7 +41,6 @@ public class DeckManager : NetworkBehaviour
 
             if (Input.GetKeyDown(KeyCode.D))
             {
-                // Now deals to ACTUAL connected players, not static objects
                 DealCardsToPlayers(connectedPlayers);
             }
         }
@@ -66,32 +64,26 @@ public class DeckManager : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        Debug.Log($"Dealing cards to {players.Count} players...");
+        Debug.Log($"Dealing cards to {players.Count} players");
 
         int cardIndex = 0;
         foreach (Card card in deck)
         {
             PlayerManager player = players[cardIndex % players.Count];
-            NetworkObject cardNetObj = card.GetComponent<NetworkObject>();
+            NetworkObject cardNetworkObject = card.GetComponent<NetworkObject>();
 
-            if (!cardNetObj.IsSpawned)
+            if (!cardNetworkObject.IsSpawned)
             {
-                cardNetObj.Spawn(true);
+                cardNetworkObject.Spawn(true);
             }
 
-            cardNetObj.ChangeOwnership(player.OwnerClientId);
+            cardNetworkObject.ChangeOwnership(player.OwnerClientId);
 
-            player.AddCardToHandClientRpc(cardNetObj.NetworkObjectId);
+            player.AddCardToHandClientRpc(cardNetworkObject.NetworkObjectId);
 
             cardIndex++;
         }
 
         Debug.Log($"Dealt all {deck.Count} cards to players!");
     }
-    
-    public List<PlayerManager> GetAllPlayers()
-    {
-        return new List<PlayerManager>(connectedPlayers);
-    }
-
 }

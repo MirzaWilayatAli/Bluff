@@ -21,16 +21,12 @@ public class TurnManager : NetworkBehaviour
     
     public override void OnNetworkSpawn()
     {
-        // Subscribe to NetworkVariable changes
         currentPlayerId.OnValueChanged += OnCurrentPlayerChanged;
-        
-        // Update UI immediately with current value
         UpdateTurnText(currentPlayerId.Value);
     }
     
     private void OnCurrentPlayerChanged(int oldValue, int newValue)
     {
-        // This runs on ALL clients when currentPlayerId changes
         UpdateTurnText(newValue);
     }
     
@@ -39,7 +35,6 @@ public class TurnManager : NetworkBehaviour
         if (turnText != null)
         {
             turnText.text = $"Now Player {playerId}'s turn";
-            Debug.Log($"Turn UI updated: Player {playerId}'s turn");
         }
     }
     
@@ -48,15 +43,14 @@ public class TurnManager : NetworkBehaviour
         if (!players.Contains(player))
         {
             players.Add(player);
-            Debug.Log($"TurnManager: Registered Player {player.OwnerClientId}");
+            Debug.Log($"TurnManager says registered player: {player.OwnerClientId}");
         }
     }
     
-    [ServerRpc]
+    [Rpc(SendTo.Server,RequireOwnership = false, Delivery = RpcDelivery.Reliable)]
     public void AdvanceTurnServerRpc()
     {
         currentPlayerId.Value = (currentPlayerId.Value + 1) % players.Count;
-        // Text update is now handled by OnCurrentPlayerChanged on all clients
     }
     
     public bool IsMyTurn(ulong playerId)

@@ -51,7 +51,7 @@ public class PlayerManager : NetworkBehaviour
         }
     }
 
-    [ServerRpc]
+    [Rpc(SendTo.Server, RequireOwnership = false, Delivery = RpcDelivery.Reliable)]
     private void PlayCardsServerRpc(ulong[] cardIds)
     {
         foreach (ulong cardId in cardIds)
@@ -93,7 +93,7 @@ public class PlayerManager : NetworkBehaviour
         UpdateCardsVisibility();
     }
 
-    [ClientRpc]
+    [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
     public void AddCardToHandClientRpc(ulong cardId)
     {
         NetworkObject cardNetObj = NetworkManager.Singleton.SpawnManager.SpawnedObjects[cardId];
