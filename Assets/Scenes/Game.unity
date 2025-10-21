@@ -7984,7 +7984,7 @@ MonoBehaviour:
   ConnectionData:
     Address: 127.0.0.1
     Port: 7777
-    ServerListenAddress: 127.0.0.1
+    ServerListenAddress: 0.0.0.0
   DebugSimulator:
     PacketDelayMS: 0
     PacketJitterMS: 0
@@ -8061,6 +8061,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buttonWidth: 100
   buttonHeight: 50
+  transport: {fileID: 1287203246}
 --- !u!1 &1334334011
 GameObject:
   m_ObjectHideFlags: 0

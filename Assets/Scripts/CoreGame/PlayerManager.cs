@@ -9,9 +9,6 @@ public class PlayerManager : NetworkBehaviour
     private Vector3 grabOffset;
     public List<GameObject> hand = new List<GameObject>();
     [SerializeField] private float cardSpacing = 1.2f;
-    
-    // Simple fixed Y positions for 4 players - local player always at bottom
-    private float[] rowYPositions = { -3f, -1f, 1f, 3f };
 
     void Update()
     {
@@ -68,7 +65,7 @@ public class PlayerManager : NetworkBehaviour
         if (!IsOwner) return; // Only arrange if we own this player
         
         // Local player always uses bottom row (index 0)
-        float yPos = rowYPositions[0];
+        float yPos = -3f;
         float startX = -(hand.Count - 1) * cardSpacing / 2f;
         
         for (int i = 0; i < hand.Count; i++)
