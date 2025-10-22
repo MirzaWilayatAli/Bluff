@@ -8,6 +8,7 @@ public class PlayerManager : NetworkBehaviour
     private GameObject selectedCard;
     private Vector3 grabOffset;
     public List<GameObject> hand = new List<GameObject>();
+    private List<GameObject> cardsToPlay = new List<GameObject>();
 
     void Update()
     {
@@ -24,6 +25,18 @@ public class PlayerManager : NetworkBehaviour
             {
                 selectedCard = hit.collider.gameObject;
                 grabOffset = selectedCard.transform.position - mouseWorld;
+                
+                // Toggle card selection
+                if (cardsToPlay.Contains(selectedCard))
+                {
+                    cardsToPlay.Remove(selectedCard);
+                    selectedCard.transform.localScale = Vector3.one;
+                }
+                else
+                {
+                    cardsToPlay.Add(selectedCard);
+                    selectedCard.transform.localScale = Vector3.one * 1.1f;
+                }
             }
         }
 
@@ -34,12 +47,36 @@ public class PlayerManager : NetworkBehaviour
 
         if (Input.GetMouseButtonUp(0))
         {
-            if (selectedCard != null && PlayingArea.Instance.IsPointInArea(selectedCard.transform.position))
-            {
-                PlayCardsServerRpc(new ulong[] { selectedCard.GetComponent<NetworkObject>().NetworkObjectId });
-            }
             selectedCard = null;
         }
+    }
+
+    public void OnPlayButtonClicked()
+    {
+        if (!IsOwner) return;
+        if (!TurnManager.Instance.IsMyTurn(OwnerClientId)) return;
+        if (cardsToPlay.Count == 0) return;
+
+        // Send card IDs to server
+        ulong[] cardIds = new ulong[cardsToPlay.Count];
+        for (int i = 0; i < cardsToPlay.Count; i++)
+        {
+            cardIds[i] = cardsToPlay[i].GetComponent<NetworkObject>().NetworkObjectId;
+        }
+        
+        PlayCardsServerRpc(cardIds);
+        ClearSelection();
+    }
+
+    private void ClearSelection()
+    {
+        // Reset visual feedback
+        foreach (GameObject card in cardsToPlay)
+        {
+            if (card != null)
+                card.transform.localScale = Vector3.one;
+        }
+        cardsToPlay.Clear();
     }
 
     [Rpc(SendTo.Server, RequireOwnership = false, Delivery = RpcDelivery.Reliable)]
@@ -47,9 +84,13 @@ public class PlayerManager : NetworkBehaviour
     {
         foreach (ulong cardId in cardIds)
         {
-            NetworkObject cardObj = NetworkManager.Singleton.SpawnManager.SpawnedObjects[cardId];
-            hand.Remove(cardObj.gameObject);
+            if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(cardId, out NetworkObject cardObj))
+            {
+                hand.Remove(cardObj.gameObject);
+            }
         }
+        
+        // Advance turn after playing cards
         TurnManager.Instance.AdvanceTurnServerRpc();
     }
     
@@ -60,6 +101,13 @@ public class PlayerManager : NetworkBehaviour
             DeckManager.Instance.RegisterPlayer(this);
             TurnManager.Instance.RegisterPlayer(this);
         }
+        
+        // Register with GameManager for button events
+        if (IsOwner)
+        {
+            GameManager.Instance.playButton.onClick.AddListener(OnPlayButtonClicked);
+        }
+        
         UpdateCardsVisibility();
     }
 

@@ -2,9 +2,11 @@ using UnityEngine;
 
 public class Card : MonoBehaviour
 {
+    [Header("Card Details")]
+    public string suit;
     public string rank;
     
-    // Card visuals
+    [Header("Card Visuals")]
     public Sprite frontSprite;
     public Sprite backSprite;
     private SpriteRenderer spriteRenderer;
@@ -14,7 +16,7 @@ public class Card : MonoBehaviour
     private void Start()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
-        ShowBack(); // Start with back shown by default
+        ShowBack();
     }
     
     public void ShowFront()
