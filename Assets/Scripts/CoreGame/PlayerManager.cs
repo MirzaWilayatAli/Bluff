@@ -8,7 +8,6 @@ public class PlayerManager : NetworkBehaviour
     private GameObject selectedCard;
     private Vector3 grabOffset;
     public List<GameObject> hand = new List<GameObject>();
-    [SerializeField] private float cardSpacing = 1.2f;
 
     void Update()
     {
@@ -39,11 +38,6 @@ public class PlayerManager : NetworkBehaviour
             {
                 PlayCardsServerRpc(new ulong[] { selectedCard.GetComponent<NetworkObject>().NetworkObjectId });
             }
-            else
-            {
-                // Only rearrange if card wasn't played
-                ArrangeMyHand();
-            }
             selectedCard = null;
         }
     }
@@ -57,27 +51,6 @@ public class PlayerManager : NetworkBehaviour
             hand.Remove(cardObj.gameObject);
         }
         TurnManager.Instance.AdvanceTurnServerRpc();
-    }
-    
-    // Each client arranges only their own hand
-    public void ArrangeMyHand()
-    {
-        if (!IsOwner) return; // Only arrange if we own this player
-        
-        // Local player always uses bottom row (index 0)
-        float yPos = -3f;
-        float startX = -(hand.Count - 1) * cardSpacing / 2f;
-        
-        for (int i = 0; i < hand.Count; i++)
-        {
-            if (hand[i] != selectedCard) // Don't rearrange currently dragged card
-            {
-                Vector3 newPos = new Vector3(startX + i * cardSpacing, yPos, 0f);
-                hand[i].transform.position = newPos;
-            }
-        }
-        
-        Debug.Log($"Player {OwnerClientId} arranged their own hand with {hand.Count} cards");
     }
     
     public override void OnNetworkSpawn()
@@ -94,11 +67,9 @@ public class PlayerManager : NetworkBehaviour
     public void AddCardToHandClientRpc(ulong cardId)
     {
         NetworkObject cardNetObj = NetworkManager.Singleton.SpawnManager.SpawnedObjects[cardId];
-        hand.Add(cardNetObj.gameObject);
-        
-        if (IsOwner)
+        if (!hand.Contains(cardNetObj.gameObject))
         {
-            ArrangeMyHand(); // Arrange when we receive new cards
+            hand.Add(cardNetObj.gameObject);
         }
         UpdateCardsVisibility();
     }

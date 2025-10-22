@@ -1,52 +1,35 @@
 using Unity.Netcode;
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Netcode.Components;
 
 public class DeckManager : NetworkBehaviour
 {
     [SerializeField] private List<Card> deck = new List<Card>();
-    private List<Card> asideCards = new List<Card>();
     private List<PlayerManager> connectedPlayers = new List<PlayerManager>();
-
+    public float cardSpacing = 1f;
+    public float cardPlaceX = -7f;
+    public float cardPlaceY = -2f;
     public static DeckManager Instance { get; private set; }
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
     }
 
     public void RegisterPlayer(PlayerManager player)
     {
         if (!connectedPlayers.Contains(player))
-        {
             connectedPlayers.Add(player);
-        }
     }
 
     private void Update()
     {
-        if (IsServer)
-        {
-            if (Input.GetKeyDown(KeyCode.S))
-            {
-                ShuffleDeck();
-            }
-
-            if (Input.GetKeyDown(KeyCode.D))
-            {
-                DealCardsToPlayers(connectedPlayers);
-            }
-        }
+        if (IsServer && Input.GetKeyDown(KeyCode.D))
+            DealCardsToPlayers(connectedPlayers);
     }
 
-    // Shuffle the deck using Fisher-Yates algorithm.
     public void ShuffleDeck()
     {
         for (int i = 0; i < deck.Count; i++)
@@ -56,34 +39,85 @@ public class DeckManager : NetworkBehaviour
             deck[i] = deck[rand];
             deck[rand] = temp;
         }
-
-        Debug.Log("Deck shuffled!");
     }
-
     public void DealCardsToPlayers(List<PlayerManager> players)
+{
+    if (!IsServer) return;
+
+    ShuffleDeck();
+    int cardIndex = 0;
+
+    // First pass: Arrange all cards on server and give server ownership
+    foreach (PlayerManager player in players)
     {
-        if (!IsServer) return;
-
-        Debug.Log($"Dealing cards to {players.Count} players");
-
-        int cardIndex = 0;
-        foreach (Card card in deck)
+        if (player.OwnerClientId == 0)
         {
-            PlayerManager player = players[cardIndex % players.Count];
-            NetworkObject cardNetworkObject = card.GetComponent<NetworkObject>();
-
-            if (!cardNetworkObject.IsSpawned)
-            {
-                cardNetworkObject.Spawn(true);
-            }
-
-            cardNetworkObject.ChangeOwnership(player.OwnerClientId);
-
-            player.AddCardToHandClientRpc(cardNetworkObject.NetworkObjectId);
-
-            cardIndex++;
+            cardPlaceX = -7f;
+            cardPlaceY = -2f;
+        }
+        else if (player.OwnerClientId == 1)
+        {
+            cardPlaceX = 1f;
+            cardPlaceY = -2f;
+        }
+        else if (player.OwnerClientId == 2)
+        {
+            cardPlaceX = -7f;
+            cardPlaceY = 0f;
+        }
+        else if (player.OwnerClientId == 3)
+        {
+            cardPlaceX = 1f;
+            cardPlaceY = 0f;
         }
 
-        Debug.Log($"Dealt all {deck.Count} cards to players!");
+        for (int i = 0; i < 5; i++)
+        {
+            Card card = deck[cardIndex++];
+            NetworkObject cardNetObj = card.GetComponent<NetworkObject>();
+
+            // Ensure server owns the card for positioning
+            if (!cardNetObj.IsSpawned)
+                cardNetObj.SpawnWithOwnership(NetworkManager.ServerClientId, true);
+            else if (!cardNetObj.IsOwnedByServer)
+                cardNetObj.ChangeOwnership(NetworkManager.ServerClientId);
+
+            // Position the card using NetworkTransform to sync to all clients
+            Vector3 pos = new Vector3(cardPlaceX + (i * cardSpacing), cardPlaceY, 0);
+            
+            NetworkTransform netTransform = card.GetComponent<NetworkTransform>();
+            if (netTransform != null)
+            {
+                netTransform.Teleport(pos, Quaternion.identity, Vector3.one);
+            }
+            else
+            {
+                cardNetObj.transform.position = pos;
+                Debug.LogWarning("Card missing NetworkTransform - positions won't sync to clients!");
+            }
+        }
     }
+
+    // Wait a frame for positions to sync, then transfer ownership
+    StartCoroutine(TransferOwnershipAfterDelay(players));
+}
+
+private System.Collections.IEnumerator TransferOwnershipAfterDelay(List<PlayerManager> players)
+{
+    yield return new WaitForSeconds(0.1f);
+    
+    int cardIndex = 0;
+    foreach (PlayerManager player in players)
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            Card card = deck[cardIndex++];
+            NetworkObject cardNetObj = card.GetComponent<NetworkObject>();
+            
+            // Transfer ownership to player
+            cardNetObj.ChangeOwnership(player.OwnerClientId);
+            player.AddCardToHandClientRpc(cardNetObj.NetworkObjectId);
+        }
+    }
+}
 }
