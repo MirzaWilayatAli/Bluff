@@ -99,22 +99,34 @@ public class GameManager : NetworkBehaviour
     private void RevealCardsAndDetermineWinnerServerRpc()
     {
         Debug.Log("All players have played! Revealing cards...");
-        
+
+        // Get card IDs
+        ulong[] cardIds = new ulong[PlayingArea.Instance.cardsInArea.Count];
+        for (int i = 0; i < PlayingArea.Instance.cardsInArea.Count; i++)
+        {
+            cardIds[i] = PlayingArea.Instance.cardsInArea[i].NetworkObjectId;
+        }
+
         // Reveal all played cards to all clients
-        RevealPlayedCardsClientRpc();
-        
+        RevealPlayedCardsClientRpc(cardIds);
+
         // TODO: Add game logic to determine winner
-        // For now, just give pot to first player
         ulong winnerId = playersWhoPlayed[0];
         AwardPotToWinnerServerRpc(winnerId);
     }
 
     [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
-    private void RevealPlayedCardsClientRpc()
+    private void RevealPlayedCardsClientRpc(ulong[] cardNetworkIds)
     {
-        foreach (Card card in PlayingArea.Instance.cardsInArea)
+        foreach (ulong netId in cardNetworkIds)
         {
-            card.ShowFront();
+            NetworkObject netObj;
+            if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(netId, out netObj))
+            {
+                Card card = netObj.GetComponent<Card>();
+                if (card != null)
+                    card.ShowFront();
+            }
         }
     }
 

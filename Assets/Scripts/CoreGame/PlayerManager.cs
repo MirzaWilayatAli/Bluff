@@ -32,8 +32,6 @@ public class PlayerManager : NetworkBehaviour
                 if (cardsToPlay.Contains(selectedCard))
                 {
                     cardsToPlay.Remove(selectedCard);
-                    // Visual feedback for deselection
-                    selectedCard.transform.localScale = Vector3.one;
                 }
                 else
                 {
@@ -41,8 +39,6 @@ public class PlayerManager : NetworkBehaviour
                     if (cardsToPlay.Count < 5)
                     {
                         cardsToPlay.Add(selectedCard);
-                        // Visual feedback for selection
-                        selectedCard.transform.localScale = Vector3.one * 1.1f;
                     }
                 }
             }
@@ -65,8 +61,7 @@ public class PlayerManager : NetworkBehaviour
             DeckManager.Instance.RegisterPlayer(this);
             TurnManager.Instance.RegisterPlayer(this);
         }
-        
-        // Register with GameManager for button events
+ 
         if (IsOwner)
         {
             GameManager.Instance.playButton.onClick.AddListener(OnPlayButtonClicked);
@@ -186,7 +181,7 @@ public class PlayerManager : NetworkBehaviour
         // Instant attempt (covers host / very fast clients)
         if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(cardId, out cardNetObj))
         {
-            Debug.Log($"[Player {OwnerClientId}] Card {cardId} already spawned locally.");
+            // Debug.Log($"[Player {OwnerClientId}] Card {cardId} already spawned locally.");
         }
         else
         {
@@ -205,15 +200,13 @@ public class PlayerManager : NetworkBehaviour
 
         if (cardNetObj == null)
         {
-            Debug.LogError($"[Player {OwnerClientId}] Timeout waiting for card {cardId} to spawn (waited {timeout}s).");
             yield break;
         }
 
-        // double-check Card component exists
+        // double-check
         Card cardComp = cardNetObj.GetComponent<Card>();
         if (cardComp == null)
         {
-            Debug.LogError($"[Player {OwnerClientId}] Spawned object {cardId} missing Card component!");
             yield break;
         }
 
@@ -221,14 +214,7 @@ public class PlayerManager : NetworkBehaviour
         if (!hand.Contains(cardGO))
         {
             hand.Add(cardGO);
-            Debug.Log($"[Player {OwnerClientId}] Added card {cardId} to hand (hand count now {hand.Count}).");
         }
-        else
-        {
-            Debug.Log($"[Player {OwnerClientId}] Card {cardId} already in hand.");
-        }
-
         UpdateCardsVisibility();
     }
-
 }

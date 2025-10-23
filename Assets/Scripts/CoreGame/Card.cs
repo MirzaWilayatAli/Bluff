@@ -1,6 +1,7 @@
+using Unity.Netcode;
 using UnityEngine;
 
-public class Card : MonoBehaviour
+public class Card : NetworkBehaviour
 {
     [Header("Card Details")]
     public string suit;
