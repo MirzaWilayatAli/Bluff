@@ -57,4 +57,8 @@ public class TurnManager : NetworkBehaviour
     {
         return (ulong)currentPlayerId.Value == playerId;
     }
+    public int GetPlayerCount()
+    {
+        return players.Count;
+    }
 }

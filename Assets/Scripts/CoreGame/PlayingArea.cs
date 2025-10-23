@@ -1,18 +1,27 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayingArea : MonoBehaviour
 {
     public static PlayingArea Instance;
+    public List<Card> cardsInArea = new List<Card>();
 
     private void Awake()
     {
         Instance = this;
     }
     
-    public bool IsPointInArea(Vector3 point)
+    public void AddCardToArea(Card card)
     {
-        Collider2D collider = GetComponent<Collider2D>();
-        return collider.OverlapPoint(new Vector2(point.x, point.y));
+        if (!cardsInArea.Contains(card))
+        {
+            cardsInArea.Add(card);
+        }
+    }
+    
+    public void ClearArea()
+    {
+        cardsInArea.Clear();
     }
 }

@@ -4,19 +4,30 @@ using UnityEngine;
 using System.Collections.Generic;
 using Unity.Netcode.Components;
 using System.Collections;
-using Unity.VisualScripting;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
 public class DeckManager : NetworkBehaviour
 {
-    [SerializeField] private List<Card> deck = new List<Card>();
-    private List<PlayerManager> connectedPlayers = new List<PlayerManager>();
+    [Header("Card Prefabs (52 total in NetworkPrefabsList)")]
+    [SerializeField] private List<GameObject> cardPrefabs = new List<GameObject>();
+
+    private readonly List<PlayerManager> connectedPlayers = new List<PlayerManager>();
+
+    [Header("Dealing Layout")]
     public float cardSpacing = 1f;
-    public float cardPlaceX = -7f;
-    public float cardPlaceY = -2f;
+    public Vector2[] playerCardPositions = new Vector2[]
+    {
+        new Vector2(-7f, -2f), // Player 0
+        new Vector2(1f, -2f),  // Player 1
+        new Vector2(-7f, 0f),  // Player 2
+        new Vector2(1f, 0f),   // Player 3
+    };
+
     public Button dealBtn;
     public static DeckManager Instance { get; private set; }
+
+    private List<GameObject> spawnedCards = new List<GameObject>();
 
     private void Awake()
     {
@@ -37,93 +48,81 @@ public class DeckManager : NetworkBehaviour
 
     private void OnDealButtonClicked()
     {
-        DealCardsToPlayers(connectedPlayers);
+        if (IsServer)
+            DealCardsToPlayers(connectedPlayers);
+        else
+            Debug.LogWarning("Only the server can deal cards!");
     }
 
-    public void ShuffleDeck()
+    private void ShuffleDeck()
     {
-        for (int i = 0; i < deck.Count; i++)
+        for (int i = 0; i < cardPrefabs.Count; i++)
         {
-            Card temp = deck[i];
-            int rand = Random.Range(i, deck.Count);
-            deck[i] = deck[rand];
-            deck[rand] = temp;
+            var temp = cardPrefabs[i];
+            int rand = Random.Range(i, cardPrefabs.Count);
+            cardPrefabs[i] = cardPrefabs[rand];
+            cardPrefabs[rand] = temp;
         }
     }
-    public void DealCardsToPlayers(List<PlayerManager> players)
+
+    private void DealCardsToPlayers(List<PlayerManager> players)
     {
         if (!IsServer) return;
+
         ShuffleDeck();
         int cardIndex = 0;
 
         foreach (PlayerManager player in players)
         {
-            if (player.OwnerClientId == 0)
-            {
-                cardPlaceX = -7f;
-                cardPlaceY = -2f;
-            }
-            else if (player.OwnerClientId == 1)
-            {
-                cardPlaceX = 1f;
-                cardPlaceY = -2f;
-            }
-            else if (player.OwnerClientId == 2)
-            {
-                cardPlaceX = -7f;
-                cardPlaceY = 0f;
-            }
-            else if (player.OwnerClientId == 3)
-            {
-                cardPlaceX = 1f;
-                cardPlaceY = 0f;
-            }
+            ulong clientId = player.OwnerClientId;
+            Vector2 basePos = Vector2.zero;
+            if (clientId < (ulong)playerCardPositions.Length)
+                basePos = playerCardPositions[clientId];
 
             for (int i = 0; i < 5; i++)
             {
-                Card card = deck[cardIndex++];
-                NetworkObject cardNetObj = card.GetComponent<NetworkObject>();
-
-                // Ensure server owns the card for positioning
-                if (!cardNetObj.IsSpawned)
-                    cardNetObj.SpawnWithOwnership(NetworkManager.ServerClientId, true);
-                else if (!cardNetObj.IsOwnedByServer)
-                    cardNetObj.ChangeOwnership(NetworkManager.ServerClientId);
-
-                // Position the card using NetworkTransform to sync to all clients
-                Vector3 pos = new Vector3(cardPlaceX + (i * cardSpacing), cardPlaceY, 0);
-                
-                NetworkTransform netTransform = card.GetComponent<NetworkTransform>();
-                if (netTransform != null)
+                if (cardIndex >= cardPrefabs.Count)
                 {
-                    netTransform.Teleport(pos, Quaternion.identity, Vector3.one);
+                    Debug.LogWarning("Deck ran out of cards!");
+                    return;
                 }
-                else
-                {
-                    cardNetObj.transform.position = pos;
-                    Debug.LogWarning("Card missing NetworkTransform - positions won't sync to clients!");
-                }
-            }
-        } 
-        StartCoroutine(TransferOwnershipAfterDelay(players));
-    }
 
-    private IEnumerator TransferOwnershipAfterDelay(List<PlayerManager> players)
-    {
-        yield return new WaitForSeconds(0.1f);
-        
-        int cardIndex = 0;
-        foreach (PlayerManager player in players)
-        {
-            for (int i = 0; i < 5; i++)
-            {
-                Card card = deck[cardIndex++];
-                NetworkObject cardNetObj = card.GetComponent<NetworkObject>();
-                
-                // Transfer ownership to player
-                cardNetObj.ChangeOwnership(player.OwnerClientId);
+                GameObject cardPrefab = cardPrefabs[cardIndex++];
+                Vector3 spawnPos = new Vector3(basePos.x + (i * cardSpacing), basePos.y, 0);
+
+                // Instantiate from prefab and spawn over the network
+                GameObject cardInstance = Instantiate(cardPrefab, spawnPos, Quaternion.identity);
+                NetworkObject cardNetObj = cardInstance.GetComponent<NetworkObject>();
+
+                if (cardNetObj == null)
+                {
+                    Debug.LogError($"{cardPrefab.name} is missing a NetworkObject!");
+                    Destroy(cardInstance);
+                    continue;
+                }
+
+                cardNetObj.SpawnWithOwnership(clientId); // Each player owns their cards
+                spawnedCards.Add(cardInstance);
+
+                // Tell player to add to their hand UI
                 player.AddCardToHandClientRpc(cardNetObj.NetworkObjectId);
             }
         }
+    }
+
+    public void ResetDeck()
+    {
+        // Destroy all previously spawned cards when starting a new round
+        if (!IsServer) return;
+
+        foreach (var card in spawnedCards)
+        {
+            if (card != null && card.TryGetComponent(out NetworkObject netObj))
+            {
+                if (netObj.IsSpawned)
+                    netObj.Despawn(true);
+            }
+        }
+        spawnedCards.Clear();
     }
 }

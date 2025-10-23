@@ -1,6 +1,8 @@
 using Unity.Netcode;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
+using System.Collections;
 
 public class PlayerManager : NetworkBehaviour
 {
@@ -30,12 +32,18 @@ public class PlayerManager : NetworkBehaviour
                 if (cardsToPlay.Contains(selectedCard))
                 {
                     cardsToPlay.Remove(selectedCard);
+                    // Visual feedback for deselection
                     selectedCard.transform.localScale = Vector3.one;
                 }
                 else
                 {
-                    cardsToPlay.Add(selectedCard);
-                    selectedCard.transform.localScale = Vector3.one * 1.1f;
+                    // Check if we can select more cards
+                    if (cardsToPlay.Count < 5)
+                    {
+                        cardsToPlay.Add(selectedCard);
+                        // Visual feedback for selection
+                        selectedCard.transform.localScale = Vector3.one * 1.1f;
+                    }
                 }
             }
         }
@@ -50,12 +58,38 @@ public class PlayerManager : NetworkBehaviour
             selectedCard = null;
         }
     }
+    public override void OnNetworkSpawn()
+    {
+        if (IsServer)
+        {
+            DeckManager.Instance.RegisterPlayer(this);
+            TurnManager.Instance.RegisterPlayer(this);
+        }
+        
+        // Register with GameManager for button events
+        if (IsOwner)
+        {
+            GameManager.Instance.playButton.onClick.AddListener(OnPlayButtonClicked);
+        }
+    }
 
     public void OnPlayButtonClicked()
     {
         if (!IsOwner) return;
         if (!TurnManager.Instance.IsMyTurn(OwnerClientId)) return;
-        if (cardsToPlay.Count == 0) return;
+        
+        // Validate card count
+        if (!GameManager.Instance.IsValidCardPlayCount(cardsToPlay.Count))
+        {
+            Debug.LogError("You must play between 2 and 5 cards!");
+            return;
+        }
+
+        if (cardsToPlay.Count == 0) 
+        {
+            Debug.LogError("Please select cards to play!");
+            return;
+        }
 
         // Send card IDs to server
         ulong[] cardIds = new ulong[cardsToPlay.Count];
@@ -65,7 +99,29 @@ public class PlayerManager : NetworkBehaviour
         }
         
         PlayCardsServerRpc(cardIds);
-        ClearSelection();
+    }
+    private void UpdateCardsVisibility()
+    {
+        foreach (GameObject card in hand)
+        {
+            if (card == null) continue;
+        
+            Card cardToUpdate = card.GetComponent<Card>();
+            NetworkObject cardNetObj = card.GetComponent<NetworkObject>();
+        
+            if (cardToUpdate != null && cardNetObj != null)
+            {
+                // Show front only to the player who owns this card, back to everyone else
+                if (cardNetObj.OwnerClientId == NetworkManager.Singleton.LocalClientId)
+                {
+                    cardToUpdate.ShowFront();
+                }
+                else
+                {
+                    cardToUpdate.ShowBack();
+                }
+            }
+        }
     }
 
     private void ClearSelection()
@@ -82,56 +138,97 @@ public class PlayerManager : NetworkBehaviour
     [Rpc(SendTo.Server, RequireOwnership = false, Delivery = RpcDelivery.Reliable)]
     private void PlayCardsServerRpc(ulong[] cardIds)
     {
+        if (!GameManager.Instance.IsValidCardPlayCount(cardIds.Length))
+        {
+            Debug.LogWarning($"Invalid card play count: {cardIds.Length}");
+            return;
+        }
+
         foreach (ulong cardId in cardIds)
         {
             if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(cardId, out NetworkObject cardObj))
             {
                 hand.Remove(cardObj.gameObject);
+                Card card = cardObj.GetComponent<Card>();
+                PlayingArea.Instance.AddCardToArea(card);
             }
         }
-        
-        // Advance turn after playing cards
+
+        GameManager.Instance.PlayerPlayedCardsServerRpc(OwnerClientId, cardIds.Length); 
         TurnManager.Instance.AdvanceTurnServerRpc();
+        ClearSelectionClientRpc();
     }
-    
-    public override void OnNetworkSpawn()
+
+    [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
+    private void ClearSelectionClientRpc()
     {
-        if (IsServer)
-        {
-            DeckManager.Instance.RegisterPlayer(this);
-            TurnManager.Instance.RegisterPlayer(this);
-        }
-        
-        // Register with GameManager for button events
         if (IsOwner)
         {
-            GameManager.Instance.playButton.onClick.AddListener(OnPlayButtonClicked);
+            ClearSelection();
         }
-        
-        UpdateCardsVisibility();
     }
+    
+    
 
     [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
     public void AddCardToHandClientRpc(ulong cardId)
     {
-        NetworkObject cardNetObj = NetworkManager.Singleton.SpawnManager.SpawnedObjects[cardId];
-        if (!hand.Contains(cardNetObj.gameObject))
+        // run the coroutine so we wait for spawn on this client
+        StartCoroutine(WaitForCardSpawnAndAdd(cardId));
+    }
+
+    private IEnumerator WaitForCardSpawnAndAdd(ulong cardId)
+    {
+        float timeout = 10f;
+        float timer = 0f;
+        NetworkObject cardNetObj = null;
+
+        // Instant attempt (covers host / very fast clients)
+        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(cardId, out cardNetObj))
         {
-            hand.Add(cardNetObj.gameObject);
+            Debug.Log($"[Player {OwnerClientId}] Card {cardId} already spawned locally.");
         }
+        else
+        {
+            // Wait loop
+            while (timer < timeout)
+            {
+                if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(cardId, out cardNetObj))
+                {
+                    Debug.Log($"[Player {OwnerClientId}] Card {cardId} spawned after {timer:F2}s.");
+                    break;
+                }
+                yield return null;
+                timer += Time.deltaTime;
+            }
+        }
+
+        if (cardNetObj == null)
+        {
+            Debug.LogError($"[Player {OwnerClientId}] Timeout waiting for card {cardId} to spawn (waited {timeout}s).");
+            yield break;
+        }
+
+        // double-check Card component exists
+        Card cardComp = cardNetObj.GetComponent<Card>();
+        if (cardComp == null)
+        {
+            Debug.LogError($"[Player {OwnerClientId}] Spawned object {cardId} missing Card component!");
+            yield break;
+        }
+
+        GameObject cardGO = cardNetObj.gameObject;
+        if (!hand.Contains(cardGO))
+        {
+            hand.Add(cardGO);
+            Debug.Log($"[Player {OwnerClientId}] Added card {cardId} to hand (hand count now {hand.Count}).");
+        }
+        else
+        {
+            Debug.Log($"[Player {OwnerClientId}] Card {cardId} already in hand.");
+        }
+
         UpdateCardsVisibility();
     }
 
-    private void UpdateCardsVisibility()
-    {
-        if (!IsOwner) return;
-        
-        foreach (Card card in FindObjectsByType<Card>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
-        {
-            if (hand.Contains(card.gameObject))
-                card.ShowFront();
-            else
-                card.ShowBack();
-        }
-    }
 }
