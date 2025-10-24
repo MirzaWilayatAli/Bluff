@@ -9,10 +9,11 @@ public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance;
     public Button playButton;
+    public Button revealButton;
+    
     
     public NetworkVariable<bool> roundInProgress = new NetworkVariable<bool>(false);
     public NetworkVariable<int> playersPlayedThisRound = new NetworkVariable<int>(0);
-    
     private List<ulong> playersWhoPlayed = new List<ulong>();
     
     private void Awake()
@@ -21,40 +22,29 @@ public class GameManager : NetworkBehaviour
         else Destroy(gameObject);
     }
 
-
-    [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
-    public void PlayerPlayedCardsServerRpc(ulong playerId, int cardsPlayed)
+    private void Start()
     {
-        if (!playersWhoPlayed.Contains(playerId))
-        {
-            playersWhoPlayed.Add(playerId);
-            playersPlayedThisRound.Value = playersWhoPlayed.Count;
+        revealButton.onClick.AddListener(OnRevealButtonClick);
+    }
+    
 
-            // Check if all players have played
-            if (playersWhoPlayed.Count >= TurnManager.Instance.GetPlayerCount())
-            {
-                // All players have played, reveal cards and determine winner
-                RevealCardsAndDetermineWinnerServerRpc();
-            }
-        }
+    public void OnRevealButtonClick()
+    {
+        RevealCardsServerRpc();
     }
 
     [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
-    private void RevealCardsAndDetermineWinnerServerRpc()
+    private void RevealCardsServerRpc()
     {
-        Debug.Log("All players have played! Revealing cards...");
-
         // Get card IDs
-        ulong[] cardIds = new ulong[PlayingArea.Instance.cardsInArea.Count];
-        for (int i = 0; i < PlayingArea.Instance.cardsInArea.Count; i++)
+        ulong[] cardIds = new ulong[PlayingArea.Instance.cardsPlayedList.Count];
+        for (int i = 0; i < PlayingArea.Instance.cardsPlayedList.Count; i++)
         {
-            cardIds[i] = PlayingArea.Instance.cardsInArea[i].NetworkObjectId;
+            cardIds[i] = PlayingArea.Instance.cardsPlayedList[i].NetworkObjectId;
         }
-
+        
         // Reveal all played cards to all clients
         RevealPlayedCardsClientRpc(cardIds);
-
-        // TODO: Add game logic to determine winner
     }
 
     [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
@@ -84,8 +74,15 @@ public class GameManager : NetworkBehaviour
         return null;
     }
 
-    public bool IsValidCardPlayCount(int count)
+    public bool CheckEnoughCardsWerePlayed(int count)
     {
-        return count >= 2 && count <= 5;
+        if (PlayingArea.Instance.cardsPlayedList.Count == 0)
+        {
+            return count >= 2;
+        }
+        else
+        {
+            return true;
+        }
     }
 }

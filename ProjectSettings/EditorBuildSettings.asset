@@ -17,13 +17,13 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/GameScene.unity
     guid: 307e89aea4441484d9f88d8d00ee4131
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/MainMenu.unity
     guid: 16e847652a9f5044e9a83c8df4d96231
   - enabled: 1
     path: Assets/Scenes/Game.unity
     guid: 4f0b3b51c9c759740946d15cf82c840a
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/PrototypeLevel.unity
     guid: 2a5614fa2a1fa31488755a2d392b5f2f
   m_configObjects:

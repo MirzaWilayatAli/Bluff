@@ -6,7 +6,7 @@ using UnityEngine;
 public class PlayingArea : NetworkBehaviour
 {
     public static PlayingArea Instance;
-    public List<Card> cardsInArea = new List<Card>();
+    public List<Card> cardsPlayedList = new List<Card>();
 
     private void Awake()
     {
@@ -15,14 +15,9 @@ public class PlayingArea : NetworkBehaviour
     
     public void AddCardToArea(Card card)
     {
-        if (!cardsInArea.Contains(card))
+        if (!cardsPlayedList.Contains(card))
         {
-            cardsInArea.Add(card);
+            cardsPlayedList.Add(card);
         }
-    }
-    
-    public void ClearArea()
-    {
-        cardsInArea.Clear();
     }
 }

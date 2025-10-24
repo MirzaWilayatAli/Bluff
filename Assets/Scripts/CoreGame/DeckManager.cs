@@ -23,6 +23,7 @@ public class DeckManager : NetworkBehaviour
     };
 
     public Button dealBtn;
+    public Button discardButton;
     public static DeckManager Instance { get; private set; }
 
     private List<GameObject> spawnedCards = new List<GameObject>();
@@ -36,6 +37,7 @@ public class DeckManager : NetworkBehaviour
     private void Start()
     {
         dealBtn.onClick.AddListener(OnDealButtonClicked);
+        discardButton.onClick.AddListener(OnDiscardButtonClick);
     }
 
     public void RegisterPlayer(PlayerManager player)
@@ -49,6 +51,14 @@ public class DeckManager : NetworkBehaviour
         if (IsServer)
         {
             DealCardsToPlayers(connectedPlayers);
+        }
+    }
+
+    private void OnDiscardButtonClick()
+    {
+        if (IsServer)
+        {
+            ResetDeck();
         }
     }
 
@@ -104,16 +114,16 @@ public class DeckManager : NetworkBehaviour
 
                 // Tell player to add to their hand UI
                 player.AddCardToHandClientRpc(cardNetObj.NetworkObjectId);
+                NetworkAudioPlayer.Instance.PlayDealCardsSoundServerRpc();
             }
         }
     }
 
     public void ResetDeck()
     {
-        // Destroy all previously spawned cards when starting a new round
         if (!IsServer) return;
 
-        foreach (var card in spawnedCards)
+        foreach (var card in PlayingArea.Instance.cardsPlayedList)
         {
             if (card != null && card.TryGetComponent(out NetworkObject netObj))
             {
@@ -121,6 +131,5 @@ public class DeckManager : NetworkBehaviour
                     netObj.Despawn(true);
             }
         }
-        spawnedCards.Clear();
     }
 }

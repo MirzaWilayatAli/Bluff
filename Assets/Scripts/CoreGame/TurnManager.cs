@@ -63,7 +63,7 @@ public class TurnManager : NetworkBehaviour
         }
         
         // Fallback: search all PlayerManager objects in scene
-        var allPlayers = FindObjectsOfType<PlayerManager>();
+        var allPlayers = FindObjectsByType<PlayerManager>(FindObjectsInactive.Exclude,FindObjectsSortMode.None);
         foreach (var player in allPlayers)
         {
             if ((ulong)playerId == player.OwnerClientId)

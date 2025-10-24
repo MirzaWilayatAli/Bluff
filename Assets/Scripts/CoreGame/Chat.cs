@@ -88,7 +88,14 @@ public class Chat : NetworkBehaviour
     [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
     public void SendMessageToClientsFromServer_Rpc(string message, string playerName)
     {
-        AddMessageToChat($"<b><color=#FFFF00>{playerName}</color></b>: {message}");
+        if (message.Contains("You must play at least 2 cards at the start"))
+        {
+            AddMessageToChat($"<color=red><b>{playerName}, {message}</b></color>\n");
+        }
+        else
+        {
+            AddMessageToChat($"<b><color=#FFFF00>{playerName}</color></b>: {message}");
+        }
     }
 
     // Client to Server

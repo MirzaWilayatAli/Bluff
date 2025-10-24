@@ -100,6 +100,10 @@ public class PlayerManager : NetworkBehaviour
 
         if (Input.GetMouseButtonUp(0))
         {
+            if (selectedCard != null)
+            {
+                NetworkAudioPlayer.Instance.PlayCardsSoundServerRpc();
+            }
             selectedCard = null;
         }
     }
@@ -108,19 +112,6 @@ public class PlayerManager : NetworkBehaviour
     {
         if (!IsOwner) return;
         if (!TurnManager.Instance.IsMyTurn(OwnerClientId)) return;
-        
-        // Validate card count
-        if (!GameManager.Instance.IsValidCardPlayCount(cardsToPlay.Count))
-        {
-            Debug.LogError("You must play between 2 and 5 cards!");
-            return;
-        }
-
-        if (cardsToPlay.Count == 0) 
-        {
-            Debug.LogError("Please select cards to play!");
-            return;
-        }
 
         // Send card IDs to server
         ulong[] cardIds = new ulong[cardsToPlay.Count];
@@ -159,12 +150,12 @@ public class PlayerManager : NetworkBehaviour
     [Rpc(SendTo.Server, RequireOwnership = false, Delivery = RpcDelivery.Reliable)]
     private void PlayCardsServerRpc(ulong[] cardIds)
     {
-        if (!GameManager.Instance.IsValidCardPlayCount(cardIds.Length))
+        if (!GameManager.Instance.CheckEnoughCardsWerePlayed(cardIds.Length))
         {
-            Debug.LogWarning($"Invalid card play count: {cardIds.Length}");
+            Chat.Instance.SendMessageToServerFromClient_Rpc("You must play at least 2 cards at the start", playerNameComponent.playerName.Value.ToString());
             return;
         }
-
+        
         foreach (ulong cardId in cardIds)
         {
             if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(cardId, out NetworkObject cardObj))
@@ -174,8 +165,6 @@ public class PlayerManager : NetworkBehaviour
                 PlayingArea.Instance.AddCardToArea(card);
             }
         }
-
-        GameManager.Instance.PlayerPlayedCardsServerRpc(OwnerClientId, cardIds.Length); 
         TurnManager.Instance.AdvanceTurnServerRpc();
         ClearSelectionClientRpc();
     }
