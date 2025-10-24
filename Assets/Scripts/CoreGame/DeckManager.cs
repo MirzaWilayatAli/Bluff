@@ -9,19 +9,17 @@ using Random = UnityEngine.Random;
 
 public class DeckManager : NetworkBehaviour
 {
-    [Header("Card Prefabs (52 total in NetworkPrefabsList)")]
     [SerializeField] private List<GameObject> cardPrefabs = new List<GameObject>();
-
     private readonly List<PlayerManager> connectedPlayers = new List<PlayerManager>();
 
-    [Header("Dealing Layout")]
+    [Header("Hands Layout")]
     public float cardSpacing = 1f;
     public Vector2[] playerCardPositions = new Vector2[]
     {
-        new Vector2(-7f, -2f), // Player 0
-        new Vector2(1f, -2f),  // Player 1
-        new Vector2(-7f, 0f),  // Player 2
-        new Vector2(1f, 0f),   // Player 3
+        new Vector2(-7f, -2f), // Player 0 Hand Position
+        new Vector2(1f, -2f),  // Player 1 Hand Position
+        new Vector2(-7f, 0f),  // Player 2 Hand Position
+        new Vector2(1f, 0f),   // Player 3 Hand Position
     };
 
     public Button dealBtn;
@@ -49,9 +47,9 @@ public class DeckManager : NetworkBehaviour
     private void OnDealButtonClicked()
     {
         if (IsServer)
+        {
             DealCardsToPlayers(connectedPlayers);
-        else
-            Debug.LogWarning("Only the server can deal cards!");
+        }
     }
 
     private void ShuffleDeck()

@@ -1,17 +1,66 @@
 using Unity.Netcode;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
 using System.Collections;
 
 public class PlayerManager : NetworkBehaviour
 {
-    public string playerName;
+    public PlayerName playerNameComponent;
     private GameObject selectedCard;
     private Vector3 grabOffset;
     public List<GameObject> hand = new List<GameObject>();
     private List<GameObject> cardsToPlay = new List<GameObject>();
 
+    public override void OnNetworkSpawn()
+    {
+        // Get or add PlayerName component
+        if (playerNameComponent == null)
+            playerNameComponent = GetComponent<PlayerName>();
+            
+        if (playerNameComponent == null)
+            playerNameComponent = gameObject.AddComponent<PlayerName>();
+
+        if (IsServer)
+        {
+            DeckManager.Instance.RegisterPlayer(this);
+            TurnManager.Instance.RegisterPlayer(this);
+        }
+
+        if (IsOwner)
+        {
+            GameManager.Instance.playButton.onClick.AddListener(OnPlayButtonClicked);
+        }
+
+        // Start checking for name updates
+        StartCoroutine(WaitForNameAndNotify());
+    }
+
+    private IEnumerator WaitForNameAndNotify()
+    {
+        // Wait until we have a non-empty name
+        while (string.IsNullOrEmpty(playerNameComponent.playerName.Value.ToString()) || 
+               playerNameComponent.playerName.Value.ToString() == "Player")
+        {
+            yield return new WaitForSeconds(0.5f); // Check every 0.5 seconds
+        }
+
+        // Once we have the name, notify chat
+        if (IsServer)
+        {
+            string finalName = playerNameComponent.playerName.Value.ToString();
+            Chat.Instance?.PlayerJoinedWithNameClientRpc(OwnerClientId, finalName);
+        }
+    }
+
+    // Helper method to get the player name
+    public string GetPlayerName()
+    {
+        if (playerNameComponent != null && !string.IsNullOrEmpty(playerNameComponent.playerName.Value.ToString()))
+        {
+            return playerNameComponent.playerName.Value.ToString();
+        }
+        return $"Player {OwnerClientId}";
+    }
     void Update()
     {
         if (!IsOwner) return;
@@ -54,19 +103,6 @@ public class PlayerManager : NetworkBehaviour
             selectedCard = null;
         }
     }
-    public override void OnNetworkSpawn()
-    {
-        if (IsServer)
-        {
-            DeckManager.Instance.RegisterPlayer(this);
-            TurnManager.Instance.RegisterPlayer(this);
-        }
- 
-        if (IsOwner)
-        {
-            GameManager.Instance.playButton.onClick.AddListener(OnPlayButtonClicked);
-        }
-    }
 
     public void OnPlayButtonClicked()
     {
@@ -95,6 +131,7 @@ public class PlayerManager : NetworkBehaviour
         
         PlayCardsServerRpc(cardIds);
     }
+
     private void UpdateCardsVisibility()
     {
         foreach (GameObject card in hand)
@@ -117,17 +154,6 @@ public class PlayerManager : NetworkBehaviour
                 }
             }
         }
-    }
-
-    private void ClearSelection()
-    {
-        // Reset visual feedback
-        foreach (GameObject card in cardsToPlay)
-        {
-            if (card != null)
-                card.transform.localScale = Vector3.one;
-        }
-        cardsToPlay.Clear();
     }
 
     [Rpc(SendTo.Server, RequireOwnership = false, Delivery = RpcDelivery.Reliable)]
@@ -159,16 +185,13 @@ public class PlayerManager : NetworkBehaviour
     {
         if (IsOwner)
         {
-            ClearSelection();
+            cardsToPlay.Clear();
         }
     }
-    
-    
 
     [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
     public void AddCardToHandClientRpc(ulong cardId)
     {
-        // run the coroutine so we wait for spawn on this client
         StartCoroutine(WaitForCardSpawnAndAdd(cardId));
     }
 

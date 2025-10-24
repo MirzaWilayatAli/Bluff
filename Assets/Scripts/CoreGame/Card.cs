@@ -15,19 +15,15 @@ public class Card : NetworkBehaviour
 
     private void Awake()
     {
-        // Assign immediately when the object is created (runs before Start or RPCs)
         spriteRenderer = GetComponent<SpriteRenderer>();
-        if (spriteRenderer == null)
-        {
-            Debug.LogError($"{name}: SpriteRenderer missing on Awake!");
-        }
     }
 
     private void Start()
     {
-        // Start might be delayed or skipped on network spawn; so safe to call again
         if (spriteRenderer == null)
+        {
             spriteRenderer = GetComponent<SpriteRenderer>();
+        }
     }
 
     public void ShowFront()
@@ -37,11 +33,9 @@ public class Card : NetworkBehaviour
             spriteRenderer = GetComponent<SpriteRenderer>();
             if (spriteRenderer == null)
             {
-                Debug.LogError($"{name}: ShowFront() failed — no SpriteRenderer found!");
                 return;
             }
         }
-
         spriteRenderer.sprite = frontSprite;
     }
 
@@ -52,11 +46,9 @@ public class Card : NetworkBehaviour
             spriteRenderer = GetComponent<SpriteRenderer>();
             if (spriteRenderer == null)
             {
-                Debug.LogError($"{name}: ShowBack() failed — no SpriteRenderer found!");
                 return;
             }
         }
-
         spriteRenderer.sprite = backSprite;
     }
 }
