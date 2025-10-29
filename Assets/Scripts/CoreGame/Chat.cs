@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.UI;
-using Unity.Netcode.Samples;
 
 public class Chat : NetworkBehaviour
 {
@@ -72,7 +70,7 @@ public class Chat : NetworkBehaviour
         chatInputField.Select();
         chatInputField.ActivateInputField();
 
-        string playerName = BootstrapManager.Instance.PlayerName;
+        string playerName = GameManager.Instance.playerNameInput.text;
 
         if (IsServer)
         {

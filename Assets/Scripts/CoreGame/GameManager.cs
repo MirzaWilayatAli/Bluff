@@ -10,7 +10,7 @@ public class GameManager : NetworkBehaviour
     public static GameManager Instance;
     public Button playButton;
     public Button revealButton;
-    
+    public TMP_InputField playerNameInput;
     
     public NetworkVariable<bool> roundInProgress = new NetworkVariable<bool>(false);
     public NetworkVariable<int> playersPlayedThisRound = new NetworkVariable<int>(0);

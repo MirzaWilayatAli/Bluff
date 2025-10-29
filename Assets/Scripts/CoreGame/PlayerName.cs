@@ -1,22 +1,23 @@
+using TMPro;
 using Unity.Netcode;
 using Unity.Collections;
-using Unity.Netcode.Samples;
 
 public class PlayerName : NetworkBehaviour
 {
     public NetworkVariable<FixedString64Bytes> playerName = new NetworkVariable<FixedString64Bytes>();
     
+    
     public override void OnNetworkSpawn()
     {
         if (IsOwner)
         {
-            SetPlayerNameServerRpc(BootstrapManager.Instance.PlayerName);
+            SetPlayerNameServerRpc(GameManager.Instance.playerNameInput.text);
         }
     }
 
     [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
-    private void SetPlayerNameServerRpc(string newName)
+    private void SetPlayerNameServerRpc(string playerNameInput)
     {
-        playerName.Value = newName;
+        playerName.Value = playerNameInput;
     }
 }
