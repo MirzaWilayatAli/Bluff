@@ -104,6 +104,7 @@ public class GameManager : NetworkBehaviour
             StartCoroutine(FlashAnimation());
             return true;
         }
+        mainPanel.SetActive(false);
         return false;
     }
     private IEnumerator FlashAnimation()

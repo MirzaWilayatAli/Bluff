@@ -47,7 +47,7 @@ public class RelayManager : MonoBehaviour
         Allocation allocation = await RelayService.Instance.CreateAllocationAsync(4);
         string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
         
-        joinCodeText.text = "Code: " + joinCode;
+        joinCodeText.text = "Room Code: " + joinCode;
 
         NetworkManager.Singleton.GetComponent<UnityTransport>()
             .SetRelayServerData(AllocationUtils.ToRelayServerData(allocation, "udp"));
