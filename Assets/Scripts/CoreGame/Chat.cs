@@ -70,7 +70,7 @@ public class Chat : NetworkBehaviour
         chatInputField.Select();
         chatInputField.ActivateInputField();
 
-        string playerName = GameManager.Instance.playerNameInput.text;
+        string playerName = GameManager.Instance.playerNameInputField.text;
 
         if (IsServer)
         {

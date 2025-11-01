@@ -28,27 +28,11 @@ public class Card : NetworkBehaviour
 
     public void ShowFront()
     {
-        if (spriteRenderer == null)
-        {
-            spriteRenderer = GetComponent<SpriteRenderer>();
-            if (spriteRenderer == null)
-            {
-                return;
-            }
-        }
         spriteRenderer.sprite = frontSprite;
     }
 
     public void ShowBack()
     {
-        if (spriteRenderer == null)
-        {
-            spriteRenderer = GetComponent<SpriteRenderer>();
-            if (spriteRenderer == null)
-            {
-                return;
-            }
-        }
         spriteRenderer.sprite = backSprite;
     }
 }

@@ -20,8 +20,16 @@ public class RelayManager : MonoBehaviour
         await UnityServices.InitializeAsync();
         await AuthenticationService.Instance.SignInAnonymouslyAsync();
         
-        hostButton.onClick.AddListener(CreateRelay);
+        hostButton.onClick.AddListener(OnHostButtonClick);
         joinButton.onClick.AddListener(OnJoinButtonClicked);
+    }
+
+    void OnHostButtonClick()
+    {
+        if (!GameManager.Instance.InputFieldValidation())
+        {
+            CreateRelay();
+        }
     }
 
     void OnJoinButtonClicked()

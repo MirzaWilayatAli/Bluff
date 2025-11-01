@@ -11,7 +11,7 @@ public class PlayerName : NetworkBehaviour
     {
         if (IsOwner)
         {
-            SetPlayerNameServerRpc(GameManager.Instance.playerNameInput.text);
+            SetPlayerNameServerRpc(GameManager.Instance.playerNameInputField.text);
         }
     }
 
