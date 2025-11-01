@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: d7a16ac1091a29542a8440c71720c04b
+guid: 0b49b1ef444fcbc41b616b987139e41a
 TrueTypeFontImporter:
   externalObjects: {}
   serializedVersion: 4
@@ -9,7 +9,7 @@ TrueTypeFontImporter:
   characterPadding: 1
   includeFontData: 1
   fontNames:
-  - Antipasto Pro
+  - ComicNeueSansID
   fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 0

@@ -15,6 +15,7 @@ public class Chat : NetworkBehaviour
 
     // Track which clients we've already welcomed
     private HashSet<ulong> welcomedClients = new HashSet<ulong>();
+    private Dictionary<ulong, string> clientPlayerNames = new Dictionary<ulong, string>();
 
     private void Awake()
     {
@@ -32,6 +33,33 @@ public class Chat : NetworkBehaviour
         }
     }
 
+    public override void OnNetworkSpawn()
+    {
+        if (IsServer)
+        {
+            NetworkManager.OnClientDisconnectCallback += OnClientDisconnected;
+        }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (IsServer)
+        {
+            NetworkManager.OnClientDisconnectCallback -= OnClientDisconnected;
+        }
+    }
+
+    private void OnClientDisconnected(ulong clientId)
+    {
+        if (clientPlayerNames.ContainsKey(clientId))
+        {
+            string playerName = clientPlayerNames[clientId];
+            PlayerLeftClientRpc(clientId, playerName);
+            clientPlayerNames.Remove(clientId);
+            welcomedClients.Remove(clientId);
+        }
+    }
+
     [ClientRpc]
     public void PlayerJoinedWithNameClientRpc(ulong clientId, string playerName)
     {
@@ -39,19 +67,19 @@ public class Chat : NetworkBehaviour
         {
             AddMessageToChat($"{playerName} joined the game");
             welcomedClients.Add(clientId);
+            
+            // Store the player name for when they leave
+            if (IsServer)
+            {
+                clientPlayerNames[clientId] = playerName;
+            }
         }
     }
 
-    private string GetPlayerName(ulong clientId)
+    [ClientRpc]
+    public void PlayerLeftClientRpc(ulong clientId, string playerName)
     {
-        foreach (var player in FindObjectsByType<PlayerManager>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
-        {
-            if (player.OwnerClientId == clientId)
-            {
-                return player.GetPlayerName();
-            }
-        }
-        return $"Player {clientId}";
+        AddMessageToChat($"{playerName} left the game");
     }
 
     private void AddMessageToChat(string message)

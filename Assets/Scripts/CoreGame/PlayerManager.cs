@@ -51,16 +51,7 @@ public class PlayerManager : NetworkBehaviour
             Chat.Instance?.PlayerJoinedWithNameClientRpc(OwnerClientId, finalName);
         }
     }
-
-    // Helper method to get the player name
-    public string GetPlayerName()
-    {
-        if (playerNameComponent != null && !string.IsNullOrEmpty(playerNameComponent.playerName.Value.ToString()))
-        {
-            return playerNameComponent.playerName.Value.ToString();
-        }
-        return $"Player {OwnerClientId}";
-    }
+    
     void Update()
     {
         if (!IsOwner) return;
@@ -77,18 +68,9 @@ public class PlayerManager : NetworkBehaviour
                 selectedCard = hit.collider.gameObject;
                 grabOffset = selectedCard.transform.position - mouseWorld;
                 
-                // Toggle card selection
-                if (cardsToPlay.Contains(selectedCard))
+                if (!cardsToPlay.Contains(selectedCard) && cardsToPlay.Count < hand.Count)
                 {
-                    cardsToPlay.Remove(selectedCard);
-                }
-                else
-                {
-                    // Check if we can select more cards
-                    if (cardsToPlay.Count < 5)
-                    {
-                        cardsToPlay.Add(selectedCard);
-                    }
+                    cardsToPlay.Add(selectedCard);
                 }
             }
         }

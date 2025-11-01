@@ -11,6 +11,7 @@ public class DeckManager : NetworkBehaviour
 {
     [SerializeField] private List<GameObject> cardPrefabs = new List<GameObject>();
     private readonly List<PlayerManager> connectedPlayers = new List<PlayerManager>();
+    public int cardsPerPlayer;
 
     [Header("Hands Layout")]
     public float cardSpacing = 1f;
@@ -87,7 +88,7 @@ public class DeckManager : NetworkBehaviour
             if (clientId < (ulong)playerCardPositions.Length)
                 basePos = playerCardPositions[clientId];
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < cardsPerPlayer; i++)
             {
                 if (cardIndex >= cardPrefabs.Count)
                 {
