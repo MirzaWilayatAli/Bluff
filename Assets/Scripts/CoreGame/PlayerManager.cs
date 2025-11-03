@@ -144,7 +144,7 @@ public class PlayerManager : NetworkBehaviour
             {
                 hand.Remove(cardObj.gameObject);
                 Card card = cardObj.GetComponent<Card>();
-                PlayingArea.Instance.AddCardToArea(card);
+                PlayingArea.Instance.AddCardToArea(card, OwnerClientId);
             }
         }
         TurnManager.Instance.AdvanceTurnServerRpc();

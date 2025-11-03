@@ -2,10 +2,12 @@ using Unity.Netcode;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using System.Collections;
 
 public class TurnManager : NetworkBehaviour
 {
-    public NetworkVariable<int> currentPlayerId = new NetworkVariable<int>(0);
+    public NetworkVariable<ulong> currentPlayerId = new NetworkVariable<ulong>(0); // Changed to ulong
+    public NetworkVariable<ulong> lastPlayerId = new NetworkVariable<ulong>(0); // Changed default from -1 to 0
     public List<PlayerManager> players = new List<PlayerManager>();
     [SerializeField] private TextMeshProUGUI turnText;
     
@@ -14,9 +16,13 @@ public class TurnManager : NetworkBehaviour
     private void Awake()
     {
         if (Instance == null)
+        {
             Instance = this;
+        }
         else
+        {
             Destroy(gameObject);
+        }
     }
     
     public override void OnNetworkSpawn()
@@ -27,18 +33,18 @@ public class TurnManager : NetworkBehaviour
         StartCoroutine(UpdateTurnAfterDelay());
     }
     
-    private System.Collections.IEnumerator UpdateTurnAfterDelay()
+    private IEnumerator UpdateTurnAfterDelay()
     {
         yield return new WaitForSeconds(0.1f);
         UpdateTurnText(currentPlayerId.Value);
     }
     
-    private void OnCurrentPlayerChanged(int oldValue, int newValue)
+    private void OnCurrentPlayerChanged(ulong oldValue, ulong newValue) // Changed to ulong
     {
         UpdateTurnText(newValue);
     }
     
-    private void UpdateTurnText(int playerId)
+    private void UpdateTurnText(ulong playerId) // Changed to ulong
     {
         if (turnText != null)
         {
@@ -47,12 +53,12 @@ public class TurnManager : NetworkBehaviour
         }
     }
     
-    private string GetPlayerName(int playerId)
+    public string GetPlayerName(ulong playerId)
     {
         // Try to find the player by ClientId instead of list index
         foreach (var player in players)
         {
-            if (player != null && (ulong)playerId == player.OwnerClientId)
+            if (player != null && playerId == player.OwnerClientId)
             {
                 PlayerName playerNameComponent = player.GetComponent<PlayerName>();
                 if (playerNameComponent != null && !string.IsNullOrEmpty(playerNameComponent.playerName.Value.ToString()))
@@ -66,7 +72,7 @@ public class TurnManager : NetworkBehaviour
         var allPlayers = FindObjectsByType<PlayerManager>(FindObjectsInactive.Exclude,FindObjectsSortMode.None);
         foreach (var player in allPlayers)
         {
-            if ((ulong)playerId == player.OwnerClientId)
+            if (playerId == player.OwnerClientId)
             {
                 PlayerName playerNameComponent = player.GetComponent<PlayerName>();
                 if (playerNameComponent != null && !string.IsNullOrEmpty(playerNameComponent.playerName.Value.ToString()))
@@ -91,16 +97,33 @@ public class TurnManager : NetworkBehaviour
     [Rpc(SendTo.Server, RequireOwnership = false, Delivery = RpcDelivery.Reliable)]
     public void AdvanceTurnServerRpc()
     {
-        currentPlayerId.Value = (currentPlayerId.Value + 1) % players.Count;
+        lastPlayerId.Value = currentPlayerId.Value;
+        
+        // Find the current player index and advance to next
+        int currentIndex = -1;
+        for (int i = 0; i < players.Count; i++)
+        {
+            if (players[i] != null && players[i].OwnerClientId == currentPlayerId.Value)
+            {
+                currentIndex = i;
+                break;
+            }
+        }
+        
+        if (currentIndex != -1 && players.Count > 0)
+        {
+            int nextIndex = (currentIndex + 1) % players.Count;
+            currentPlayerId.Value = players[nextIndex].OwnerClientId;
+        }
+    }
+    
+    public ulong GetLastPlayerId()
+    {
+        return lastPlayerId.Value; // No need to cast now
     }
     
     public bool IsMyTurn(ulong playerId)
     {
-        return (ulong)currentPlayerId.Value == playerId;
-    }
-    
-    public int GetPlayerCount()
-    {
-        return players.Count;
+        return currentPlayerId.Value == playerId; // No need to cast now
     }
 }

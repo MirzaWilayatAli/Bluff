@@ -60,7 +60,7 @@ public class Chat : NetworkBehaviour
         }
     }
 
-    [ClientRpc]
+    [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
     public void PlayerJoinedWithNameClientRpc(ulong clientId, string playerName)
     {
         if (!welcomedClients.Contains(clientId))
@@ -76,17 +76,12 @@ public class Chat : NetworkBehaviour
         }
     }
 
-    [ClientRpc]
+    [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
     public void PlayerLeftClientRpc(ulong clientId, string playerName)
     {
         AddMessageToChat($"{playerName} left the game");
     }
-
-    private void AddMessageToChat(string message)
-    {
-        messageText.text += message + "\n";
-    }
-
+    
     public void SendChatMessage()
     {
         if (chatInputField == null || string.IsNullOrWhiteSpace(chatInputField.text))
@@ -109,25 +104,28 @@ public class Chat : NetworkBehaviour
             SendMessageToServerFromClient_Rpc(message, playerName);
         }
     }
-
-    // Server to Clients
+    
+    [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
+    public void SendMessageToServerFromClient_Rpc(string message, string playerName, RpcParams rpcParams = default)
+    {
+        SendMessageToClientsFromServer_Rpc(message, playerName);
+    }
+    
     [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
     public void SendMessageToClientsFromServer_Rpc(string message, string playerName)
     {
         if (message.Contains("You must play at least 2 cards at the start"))
         {
-            AddMessageToChat($"<color=red><b>{playerName}, {message}</b></color>\n");
+            AddMessageToChat($"<color=#b30000><b>{playerName}, {message}</b></color>\n");
         }
         else
         {
-            AddMessageToChat($"<b><color=#FFFF00>{playerName}</color></b>: {message}");
+            AddMessageToChat($"<b><color=#ff8000>{playerName}</color></b>: {message}");
         }
     }
 
-    // Client to Server
-    [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
-    public void SendMessageToServerFromClient_Rpc(string message, string playerName, RpcParams rpcParams = default)
+    private void AddMessageToChat(string message)
     {
-        SendMessageToClientsFromServer_Rpc(message, playerName);
+        messageText.text += message + "\n";
     }
 }

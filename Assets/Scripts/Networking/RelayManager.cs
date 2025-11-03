@@ -12,6 +12,7 @@ public class RelayManager : MonoBehaviour
 {
     [SerializeField] Button hostButton;
     [SerializeField] Button joinButton;
+    [SerializeField] Button disconnectButton;
     [SerializeField] TextMeshProUGUI joinCodeText;
     [SerializeField] TMP_InputField joinInput;
 
@@ -22,6 +23,7 @@ public class RelayManager : MonoBehaviour
         
         hostButton.onClick.AddListener(OnHostButtonClick);
         joinButton.onClick.AddListener(OnJoinButtonClicked);
+        disconnectButton.onClick.AddListener(OnDisconnectButtonClicked);
     }
 
     void OnHostButtonClick()
@@ -38,6 +40,10 @@ public class RelayManager : MonoBehaviour
         {
             JoinRelay(joinInput.text);
         }
+    }
+    void OnDisconnectButtonClicked()
+    {
+        StopClient();
     }
 
     async void CreateRelay()
@@ -65,5 +71,14 @@ public class RelayManager : MonoBehaviour
             .SetRelayServerData(AllocationUtils.ToRelayServerData(joinAllocation, "udp"));
 
         NetworkManager.Singleton.StartClient();
+    }
+    public void StopClient()
+    {
+        if (NetworkManager.Singleton.IsClient)
+        {
+            NetworkManager.Singleton.Shutdown();
+            joinButton.interactable = true;
+            hostButton.interactable = true;
+        }
     }
 }

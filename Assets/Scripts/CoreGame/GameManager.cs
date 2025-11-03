@@ -4,12 +4,14 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 
 public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance;
     public Button playButton;
     public Button revealButton;
+    public Button callBluffButton;
     
     public TMP_InputField playerNameInputField;
     public float flashDuration = 0.5f;
@@ -34,8 +36,13 @@ public class GameManager : NetworkBehaviour
         originalScale = playerNameInputField.transform.localScale;
         revealButton.onClick.AddListener(OnRevealButtonClick);
         joinButton.onClick.AddListener(OnJoinButtonClicked);
+        callBluffButton.onClick.AddListener(OnBluffButtonClicked);
     }
-    
+
+    public void OnBluffButtonClicked()
+    {
+        CallBluffServerRpc();
+    }
 
     public void OnRevealButtonClick()
     {
@@ -54,6 +61,19 @@ public class GameManager : NetworkBehaviour
             joinPanel.SetActive(true);
         }
     }
+    [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
+    private void CallBluffServerRpc(RpcParams rpcParams = default)
+    {
+        // Get the player who called bluff (ANY player who clicked the button)
+        ulong bluffCallerId = rpcParams.Receive.SenderClientId;
+        string bluffCallerName = TurnManager.Instance.GetPlayerName(bluffCallerId);
+        ulong lastPlayerId = TurnManager.Instance.GetLastPlayerId();
+        string lastPlayerName = TurnManager.Instance.GetPlayerName(lastPlayerId);
+    
+        // Send bluff call message to chat
+        string bluffMessage = $"<b>{bluffCallerName}</b> called BLUFF on <b>{lastPlayerName}</b>!";
+        Chat.Instance.SendMessageToClientsFromServer_Rpc(bluffMessage, "Alert");
+    }
 
     [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
     private void RevealCardsServerRpc()
@@ -62,12 +82,20 @@ public class GameManager : NetworkBehaviour
         {
             return;
         }
-        // Get card IDs
-        ulong[] cardIds = new ulong[PlayingArea.Instance.cardsPlayedList.Count];
-        for (int i = 0; i < PlayingArea.Instance.cardsPlayedList.Count; i++)
+    
+        // Get the last player's ID from TurnManager
+        ulong lastPlayerId = TurnManager.Instance.GetLastPlayerId();
+    
+        // Get only the cards played by the last player
+        List<Card> lastPlayerCards = PlayingArea.Instance.GetCardsByClient(lastPlayerId);
+    
+        // Convert to array of NetworkObject IDs
+        ulong[] cardIds = new ulong[lastPlayerCards.Count];
+        for (int i = 0; i < lastPlayerCards.Count; i++)
         {
-            cardIds[i] = PlayingArea.Instance.cardsPlayedList[i].NetworkObjectId;
+            cardIds[i] = lastPlayerCards[i].NetworkObjectId;
         }
+    
         RevealCardsOnAllClientsRpc(cardIds);
     }
 

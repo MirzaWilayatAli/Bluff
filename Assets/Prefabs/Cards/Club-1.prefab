@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 4767059132256779954}
   - component: {fileID: 3821395380626086200}
   - component: {fileID: 6713545297603473177}
-  - component: {fileID: 2328125322268374029}
   - component: {fileID: 5559400087364191414}
+  - component: {fileID: 2328125322268374029}
   - component: {fileID: 8270106869841073576}
   m_Layer: 6
   m_Name: Club-1
@@ -31,7 +31,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -6, y: 2, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.2, y: 1.2, z: 1.2}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -137,22 +137,6 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.88, y: 1.24}
   m_EdgeRadius: 0
---- !u!114 &2328125322268374029
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8420325849892280650}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c65b2ef9cc2d1734ba03b0c53ae5ed86, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  suit: club
-  rank: ace
-  frontSprite: {fileID: 21300000, guid: 634dac46c34614d45a8f41d8ba94fc4f, type: 2}
-  backSprite: {fileID: 21300000, guid: 0abfc60cf64e8bb469b4f89f5224ead2, type: 2}
 --- !u!114 &5559400087364191414
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -165,7 +149,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 1333761292
+  GlobalObjectIdHash: 4165412439
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -178,6 +162,23 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &2328125322268374029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8420325849892280650}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c65b2ef9cc2d1734ba03b0c53ae5ed86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  suit: club
+  rank: ace
+  frontSprite: {fileID: 21300000, guid: 634dac46c34614d45a8f41d8ba94fc4f, type: 2}
+  backSprite: {fileID: 21300000, guid: 0abfc60cf64e8bb469b4f89f5224ead2, type: 2}
 --- !u!114 &8270106869841073576
 MonoBehaviour:
   m_ObjectHideFlags: 0
