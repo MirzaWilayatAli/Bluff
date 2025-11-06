@@ -6,14 +6,11 @@ using UnityEngine;
 
 public class Chat : NetworkBehaviour
 {
-    [Header("UI References")]
     public TMP_InputField chatInputField;
     public TextMeshProUGUI messageText;
 
-    // Singleton for easy access
     public static Chat Instance { get; private set; }
 
-    // Track which clients we've already welcomed
     private HashSet<ulong> welcomedClients = new HashSet<ulong>();
     private Dictionary<ulong, string> clientPlayerNames = new Dictionary<ulong, string>();
 
@@ -38,6 +35,19 @@ public class Chat : NetworkBehaviour
         if (IsServer)
         {
             NetworkManager.OnClientDisconnectCallback += OnClientDisconnected;
+            NetworkManager.OnClientConnectedCallback += OnClientConnected; // 🔹 NEW
+        }
+        else if (IsClient && !IsHost)
+        {
+            // 🔹 Tell the server our name as soon as we join
+            string playerName = GameManager.Instance.playerNameInputField.text;
+            NotifyServerOfJoinServerRpc(playerName);
+        }
+        else if (IsHost)
+        {
+            // 🔹 Host counts as joining too
+            string hostName = GameManager.Instance.playerNameInputField.text;
+            PlayerJoinedWithNameClientRpc(NetworkManager.LocalClientId, hostName);
         }
     }
 
@@ -46,7 +56,28 @@ public class Chat : NetworkBehaviour
         if (IsServer)
         {
             NetworkManager.OnClientDisconnectCallback -= OnClientDisconnected;
+            NetworkManager.OnClientConnectedCallback -= OnClientConnected;
         }
+    }
+
+    private void OnClientConnected(ulong clientId)
+    {
+        if (!clientPlayerNames.ContainsKey(clientId))
+        {
+            clientPlayerNames[clientId] = $"Player {clientId}";
+        }
+    }
+
+    [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
+    private void NotifyServerOfJoinServerRpc(string playerName, RpcParams rpcParams = default)
+    {
+        ulong senderId = rpcParams.Receive.SenderClientId;
+
+        if (!clientPlayerNames.ContainsKey(senderId))
+            clientPlayerNames[senderId] = playerName;
+
+        // tell everyone this client joined
+        PlayerJoinedWithNameClientRpc(senderId, playerName);
     }
 
     private void OnClientDisconnected(ulong clientId)
@@ -65,23 +96,20 @@ public class Chat : NetworkBehaviour
     {
         if (!welcomedClients.Contains(clientId))
         {
-            AddMessageToChat($"{playerName} joined the game");
+            AddMessageToChat($"<color=#027148><b>{playerName} joined the game</b></color>");
             welcomedClients.Add(clientId);
-            
-            // Store the player name for when they leave
+
             if (IsServer)
-            {
                 clientPlayerNames[clientId] = playerName;
-            }
         }
     }
 
     [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
     public void PlayerLeftClientRpc(ulong clientId, string playerName)
     {
-        AddMessageToChat($"{playerName} left the game");
+        AddMessageToChat($"<color=red><b>{playerName} left the game</b></color>");
     }
-    
+
     public void SendChatMessage()
     {
         if (chatInputField == null || string.IsNullOrWhiteSpace(chatInputField.text))
@@ -89,7 +117,7 @@ public class Chat : NetworkBehaviour
 
         string message = chatInputField.text.Trim();
         chatInputField.text = "";
-        
+
         chatInputField.Select();
         chatInputField.ActivateInputField();
 
@@ -104,13 +132,13 @@ public class Chat : NetworkBehaviour
             SendMessageToServerFromClient_Rpc(message, playerName);
         }
     }
-    
+
     [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
     public void SendMessageToServerFromClient_Rpc(string message, string playerName, RpcParams rpcParams = default)
     {
         SendMessageToClientsFromServer_Rpc(message, playerName);
     }
-    
+
     [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
     public void SendMessageToClientsFromServer_Rpc(string message, string playerName)
     {

@@ -26,8 +26,15 @@ public class GameManager : NetworkBehaviour
     
     private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        if (Instance == null) 
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else 
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void Start()
@@ -48,6 +55,7 @@ public class GameManager : NetworkBehaviour
     {
         if (!IsServer)
         {
+            revealButton.interactable = false;
             return;
         }
         RevealCardsServerRpc();
@@ -72,7 +80,7 @@ public class GameManager : NetworkBehaviour
     
         // Send bluff call message to chat
         string bluffMessage = $"<b>{bluffCallerName}</b> called BLUFF on <b>{lastPlayerName}</b>!";
-        Chat.Instance.SendMessageToClientsFromServer_Rpc(bluffMessage, "Alert");
+        Chat.Instance.SendMessageToClientsFromServer_Rpc(bluffMessage, "<color=red>Alert</color>");
     }
 
     [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
@@ -82,22 +90,23 @@ public class GameManager : NetworkBehaviour
         {
             return;
         }
-    
+
         // Get the last player's ID from TurnManager
         ulong lastPlayerId = TurnManager.Instance.GetLastPlayerId();
-    
-        // Get only the cards played by the last player
-        List<Card> lastPlayerCards = PlayingArea.Instance.GetCardsByClient(lastPlayerId);
-    
+
+        // Get only the cards played by the last player in their last turn
+        List<Card> lastPlayerCards = PlayingArea.Instance.GetLastTurnCardsForClient(lastPlayerId);
+
         // Convert to array of NetworkObject IDs
         ulong[] cardIds = new ulong[lastPlayerCards.Count];
         for (int i = 0; i < lastPlayerCards.Count; i++)
         {
             cardIds[i] = lastPlayerCards[i].NetworkObjectId;
         }
-    
+
         RevealCardsOnAllClientsRpc(cardIds);
     }
+
 
     [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
     private void RevealCardsOnAllClientsRpc(ulong[] cardIds)

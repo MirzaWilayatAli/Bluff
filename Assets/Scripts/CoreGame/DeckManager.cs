@@ -53,6 +53,10 @@ public class DeckManager : NetworkBehaviour
         {
             DealCardsToPlayers(connectedPlayers);
         }
+        else
+        {
+            dealBtn.interactable = false;
+        }
     }
 
     private void OnDiscardButtonClick()
@@ -60,6 +64,10 @@ public class DeckManager : NetworkBehaviour
         if (IsServer)
         {
             ResetDeck();
+        }
+        else
+        {
+            discardButton.interactable = false;
         }
     }
 
