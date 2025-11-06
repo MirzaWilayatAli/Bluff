@@ -88,35 +88,4 @@ public class PlayingArea : NetworkBehaviour
 
         return new List<Card>();
     }
-    
-    public List<(ulong clientId, List<Card> cards, DateTime timestamp)> GetTurnHistory()
-    {
-        var list = new List<(ulong, List<Card>, DateTime)>();
-        foreach (var entry in turnHistory)
-        {
-            list.Add((entry.clientId, new List<Card>(entry.cards), entry.timestamp));
-        }
-        return list;
-    }
-
-    public void RemoveCardFromArea(Card card)
-    {
-        if (card == null) return;
-
-        if (cardsPlayedList.Contains(card))
-            cardsPlayedList.Remove(card);
-
-        foreach (var entry in turnHistory)
-        {
-            if (entry.cards.Contains(card))
-                entry.cards.Remove(card);
-        }
-
-        turnHistory.RemoveAll(e => e.cards.Count == 0);
-    }
-    public void ClearAreaAndHistory()
-    {
-        cardsPlayedList.Clear();
-        turnHistory.Clear();
-    }
 }
