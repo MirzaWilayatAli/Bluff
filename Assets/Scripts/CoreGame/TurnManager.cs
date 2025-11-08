@@ -6,8 +6,8 @@ using System.Collections;
 
 public class TurnManager : NetworkBehaviour
 {
-    public NetworkVariable<ulong> currentPlayerId = new NetworkVariable<ulong>(0); // Changed to ulong
-    public NetworkVariable<ulong> lastPlayerId = new NetworkVariable<ulong>(0); // Changed default from -1 to 0
+    public NetworkVariable<ulong> currentPlayerId = new NetworkVariable<ulong>(0); 
+    public NetworkVariable<ulong> lastPlayerId = new NetworkVariable<ulong>(0); 
     public List<PlayerManager> players = new List<PlayerManager>();
     [SerializeField] private TextMeshProUGUI turnText;
     
@@ -27,35 +27,36 @@ public class TurnManager : NetworkBehaviour
     
     public override void OnNetworkSpawn()
     {
+        if (IsServer)
+        {
+            currentPlayerId.Value = players[0].OwnerClientId;
+        }
+
         currentPlayerId.OnValueChanged += OnCurrentPlayerChanged;
-        
-        // Wait a frame to ensure all players are registered, then update
         StartCoroutine(UpdateTurnAfterDelay());
     }
     
     private IEnumerator UpdateTurnAfterDelay()
     {
-        yield return new WaitForSeconds(0.1f);
+        yield return new WaitUntil(() => players.Count > 1);
+        yield return new WaitForSeconds(0.2f); // extra delay for playerName sync
         UpdateTurnText(currentPlayerId.Value);
     }
     
-    private void OnCurrentPlayerChanged(ulong oldValue, ulong newValue) // Changed to ulong
+    private void OnCurrentPlayerChanged(ulong oldValue, ulong newValue)
     {
         UpdateTurnText(newValue);
     }
     
-    private void UpdateTurnText(ulong playerId) // Changed to ulong
+    private void UpdateTurnText(ulong playerId) 
     {
-        if (turnText != null)
-        {
-            string playerName = GetPlayerName(playerId);
-            turnText.text = $"{playerName}'s turn";
-        }
+        string playerName = GetPlayerName(playerId); 
+        turnText.text = $"{playerName}'s turn";
     }
     
     public string GetPlayerName(ulong playerId)
     {
-        // Try to find the player by ClientId instead of list index
+        // find the player by ClientId
         foreach (var player in players)
         {
             if (player != null && playerId == player.OwnerClientId)
@@ -67,21 +68,6 @@ public class TurnManager : NetworkBehaviour
                 }
             }
         }
-        
-        // Fallback: search all PlayerManager objects in scene
-        var allPlayers = FindObjectsByType<PlayerManager>(FindObjectsInactive.Exclude,FindObjectsSortMode.None);
-        foreach (var player in allPlayers)
-        {
-            if (playerId == player.OwnerClientId)
-            {
-                PlayerName playerNameComponent = player.GetComponent<PlayerName>();
-                if (playerNameComponent != null && !string.IsNullOrEmpty(playerNameComponent.playerName.Value.ToString()))
-                {
-                    return playerNameComponent.playerName.Value.ToString();
-                }
-            }
-        }
-        
         return $"Player {playerId}";
     }
     
@@ -90,7 +76,6 @@ public class TurnManager : NetworkBehaviour
         if (!players.Contains(player))
         {
             players.Add(player);
-            Debug.Log($"Registered player: {player.OwnerClientId} at index {players.IndexOf(player)}");
         }
     }
     
@@ -119,11 +104,11 @@ public class TurnManager : NetworkBehaviour
     
     public ulong GetLastPlayerId()
     {
-        return lastPlayerId.Value; // No need to cast now
+        return lastPlayerId.Value;
     }
     
     public bool IsMyTurn(ulong playerId)
     {
-        return currentPlayerId.Value == playerId; // No need to cast now
+        return currentPlayerId.Value == playerId;
     }
 }

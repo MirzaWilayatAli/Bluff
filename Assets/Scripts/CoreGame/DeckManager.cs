@@ -36,8 +36,8 @@ public class DeckManager : NetworkBehaviour
     }
 
     private void Start()
-    {
-        dealBtn.onClick.AddListener(OnDealButtonClicked);
+    { 
+        dealBtn.onClick.AddListener(OnDealButtonClicked); 
         discardButton.onClick.AddListener(OnDiscardButtonClick);
     }
 
@@ -61,7 +61,7 @@ public class DeckManager : NetworkBehaviour
 
     private void OnDiscardButtonClick()
     {
-        if (IsServer)
+        if (IsHost)
         {
             ResetDeck();
         }
@@ -105,7 +105,7 @@ public class DeckManager : NetworkBehaviour
                 }
 
                 GameObject cardPrefab = cardPrefabs[cardIndex++];
-                Vector3 spawnPos = new Vector3(basePos.x + (i * cardSpacing), basePos.y, 0);
+                Vector3 spawnPos = new Vector3(basePos.x + (i * cardSpacing), basePos.y, -2); // Gave this -2 so that card doesnot go under the table
 
                 // Instantiate from prefab and spawn over the network
                 GameObject cardInstance = Instantiate(cardPrefab, spawnPos, Quaternion.identity);

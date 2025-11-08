@@ -352,7 +352,7 @@ MonoBehaviour:
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.5849056, g: 0.5849056, b: 0.5849056, a: 0.23921569}
     m_ColorMultiplier: 1
-    m_FadeDuration: 0.5
+    m_FadeDuration: 0.1
   m_SpriteState:
     m_HighlightedSprite: {fileID: 0}
     m_PressedSprite: {fileID: 0}
@@ -1067,7 +1067,7 @@ Transform:
   m_GameObject: {fileID: 126142928}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1139,7 +1139,7 @@ MonoBehaviour:
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.6132076, g: 0.6132076, b: 0.6132076, a: 0.3137255}
     m_ColorMultiplier: 1
-    m_FadeDuration: 0.5
+    m_FadeDuration: 0.1
   m_SpriteState:
     m_HighlightedSprite: {fileID: 0}
     m_PressedSprite: {fileID: 0}
@@ -1646,13 +1646,15 @@ MonoBehaviour:
   playButton: {fileID: 564526134}
   revealButton: {fileID: 1193314279}
   callBluffButton: {fileID: 1153842226}
+  joinButton: {fileID: 693833898}
+  transferTo: {fileID: 317079175}
+  returnTo: {fileID: 1688765505}
   playerNameInputField: {fileID: 1612023396}
   flashDuration: 0.6
   flashCount: 1
   mainPanel: {fileID: 1070842118}
   joinPanel: {fileID: 1478373830}
   settingsPanel: {fileID: 2079818792}
-  joinButton: {fileID: 693833898}
 --- !u!4 &285660306
 Transform:
   m_ObjectHideFlags: 0
@@ -1869,7 +1871,7 @@ GameObject:
   - component: {fileID: 317079176}
   - component: {fileID: 317079175}
   m_Layer: 5
-  m_Name: GiveCardsToButton-0
+  m_Name: TransferToButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1922,7 +1924,7 @@ MonoBehaviour:
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.5849056, g: 0.5849056, b: 0.5849056, a: 0.23921569}
     m_ColorMultiplier: 1
-    m_FadeDuration: 0.5
+    m_FadeDuration: 0.1
   m_SpriteState:
     m_HighlightedSprite: {fileID: 0}
     m_PressedSprite: {fileID: 0}
@@ -2170,7 +2172,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Give
+  m_text: Return
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: a4b57f087cc952249bcccbe97382c05e, type: 2}
   m_sharedMaterial: {fileID: -6344828978534428645, guid: a4b57f087cc952249bcccbe97382c05e, type: 2}
@@ -5610,7 +5612,7 @@ MonoBehaviour:
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.5660378, g: 0.5660378, b: 0.5660378, a: 0.2901961}
     m_ColorMultiplier: 1
-    m_FadeDuration: 0.5
+    m_FadeDuration: 0.1
   m_SpriteState:
     m_HighlightedSprite: {fileID: 0}
     m_PressedSprite: {fileID: 0}
@@ -7621,7 +7623,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Give
+  m_text: Transfer
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: a4b57f087cc952249bcccbe97382c05e, type: 2}
   m_sharedMaterial: {fileID: -6344828978534428645, guid: a4b57f087cc952249bcccbe97382c05e, type: 2}
@@ -8210,7 +8212,7 @@ GameObject:
   - component: {fileID: 1688765506}
   - component: {fileID: 1688765505}
   m_Layer: 5
-  m_Name: GiveCardsToButton-1
+  m_Name: ReturnToButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8263,7 +8265,7 @@ MonoBehaviour:
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.5849056, g: 0.5849056, b: 0.5849056, a: 0.23921569}
     m_ColorMultiplier: 1
-    m_FadeDuration: 0.5
+    m_FadeDuration: 0.1
   m_SpriteState:
     m_HighlightedSprite: {fileID: 0}
     m_PressedSprite: {fileID: 0}

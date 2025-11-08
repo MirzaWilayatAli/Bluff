@@ -13,18 +13,11 @@ public class PlayerManager : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        // Get or add PlayerName component
-        if (playerNameComponent == null)
-            playerNameComponent = GetComponent<PlayerName>();
-            
-        if (playerNameComponent == null)
-            playerNameComponent = gameObject.AddComponent<PlayerName>();
-
         if (IsServer)
         {
             DeckManager.Instance.RegisterPlayer(this);
-            TurnManager.Instance.RegisterPlayer(this);
         }
+        TurnManager.Instance.RegisterPlayer(this);
 
         if (IsOwner)
         {
@@ -48,14 +41,13 @@ public class PlayerManager : NetworkBehaviour
         if (IsServer)
         {
             string finalName = playerNameComponent.playerName.Value.ToString();
-            Chat.Instance?.PlayerJoinedWithNameClientRpc(OwnerClientId, finalName);
+            Chat.Instance.PlayerJoinedWithNameClientRpc(OwnerClientId, finalName);
         }
     }
     
     void Update()
     {
         if (!IsOwner) return;
-        if (!TurnManager.Instance.IsMyTurn(OwnerClientId)) return;
 
         Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mouseWorld.z = 0f;
@@ -112,19 +104,14 @@ public class PlayerManager : NetworkBehaviour
             if (card == null) continue;
         
             Card cardToUpdate = card.GetComponent<Card>();
-            NetworkObject cardNetObj = card.GetComponent<NetworkObject>();
-        
-            if (cardToUpdate != null && cardNetObj != null)
+            NetworkObject cardNetObj = card.GetComponent<NetworkObject>(); 
+            if (cardNetObj.OwnerClientId == NetworkManager.Singleton.LocalClientId) 
             {
-                // Show front only to the player who owns this card, back to everyone else
-                if (cardNetObj.OwnerClientId == NetworkManager.Singleton.LocalClientId)
-                {
-                    cardToUpdate.ShowFront();
-                }
-                else
-                {
-                    cardToUpdate.ShowBack();
-                }
+                cardToUpdate.ShowFront(); 
+            }
+            else
+            {
+                cardToUpdate.ShowBack(); 
             }
         }
     }
@@ -204,10 +191,10 @@ public class PlayerManager : NetworkBehaviour
             yield break;
         }
 
-        GameObject cardGO = cardNetObj.gameObject;
-        if (!hand.Contains(cardGO))
+        GameObject card = cardNetObj.gameObject;
+        if (!hand.Contains(card))
         {
-            hand.Add(cardGO);
+            hand.Add(card);
         }
         UpdateCardsVisibility();
     }

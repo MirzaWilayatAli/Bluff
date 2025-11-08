@@ -13,13 +13,12 @@ public class PlayingArea : NetworkBehaviour
     private void Awake()
     {
         Instance = this;
-        if (playingAreaCollider == null) 
-        { 
-            playingAreaCollider = GetComponent<Collider2D>(); 
+        if (playingAreaCollider == null)
+        {
+            playingAreaCollider = GetComponent<Collider2D>();
         }
     }
-    
-    // Represents the cards played by a single client during one turn.
+
     [Serializable]
     private class TurnEntry
     {
@@ -37,12 +36,10 @@ public class PlayingArea : NetworkBehaviour
 
     public void AddCardToArea(Card card, ulong clientId)
     {
-        if (card == null)
-        {
-            return;
-        }
-        Collider2D cardCollider = card.GetComponent<Collider2D>();
-        if (!playingAreaCollider.bounds.Intersects(cardCollider.bounds))
+        if (card == null) return;
+
+        Vector2 cardPosition = card.transform.position;
+        if (!playingAreaCollider.OverlapPoint(cardPosition))
         {
             return;
         }
@@ -52,21 +49,14 @@ public class PlayingArea : NetworkBehaviour
             cardsPlayedList.Add(card);
         }
 
-        TurnEntry lastEntry;
-
-        if (turnHistory.Count > 0)
-        {
-            lastEntry = turnHistory[turnHistory.Count - 1];
-        }
-        else
-        {
-            lastEntry = null;
-        }
+        TurnEntry lastEntry = turnHistory.Count > 0 ? turnHistory[turnHistory.Count - 1] : null;
 
         if (lastEntry != null && lastEntry.clientId == clientId)
         {
             if (!lastEntry.cards.Contains(card))
+            {
                 lastEntry.cards.Add(card);
+            }
         }
         else
         {
@@ -75,7 +65,7 @@ public class PlayingArea : NetworkBehaviour
             turnHistory.Add(newEntry);
         }
     }
-    
+
     public List<Card> GetLastTurnCardsForClient(ulong clientId)
     {
         for (int i = turnHistory.Count - 1; i >= 0; i--)

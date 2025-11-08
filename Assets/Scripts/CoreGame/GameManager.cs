@@ -12,6 +12,10 @@ public class GameManager : NetworkBehaviour
     public Button playButton;
     public Button revealButton;
     public Button callBluffButton;
+    public Button joinButton;
+    public Button transferTo;
+    public Button returnTo;
+
     
     public TMP_InputField playerNameInputField;
     public float flashDuration = 0.5f;
@@ -22,7 +26,7 @@ public class GameManager : NetworkBehaviour
     public GameObject mainPanel;
     public GameObject joinPanel;
     public GameObject settingsPanel;
-    public Button joinButton;
+    
     
     private void Awake()
     {
@@ -44,6 +48,19 @@ public class GameManager : NetworkBehaviour
         revealButton.onClick.AddListener(OnRevealButtonClick);
         joinButton.onClick.AddListener(OnJoinButtonClicked);
         callBluffButton.onClick.AddListener(OnBluffButtonClicked);
+    
+        // Initialize bluff resolution buttons (hidden by default)
+        if (transferTo != null) 
+        {
+            transferTo.gameObject.SetActive(false);
+            transferTo.onClick.AddListener(GiveCardsToBluffCaller);
+        }
+    
+        if (returnTo != null) 
+        {
+            returnTo.gameObject.SetActive(false);
+            returnTo.onClick.AddListener(GiveCardsToLastPlayer);
+        }
     }
 
     public void OnBluffButtonClicked()
@@ -53,12 +70,15 @@ public class GameManager : NetworkBehaviour
 
     public void OnRevealButtonClick()
     {
-        if (!IsServer)
+        if (IsHost)
         {
-            revealButton.interactable = false;
-            return;
+            RevealCardsServerRpc();
         }
-        RevealCardsServerRpc();
+        else
+        {
+            // Only disable if not host
+            revealButton.interactable = false;
+        }
     }
 
     public void OnJoinButtonClicked()
@@ -74,23 +94,42 @@ public class GameManager : NetworkBehaviour
     {
         // Get the player who called bluff (ANY player who clicked the button)
         ulong bluffCallerId = rpcParams.Receive.SenderClientId;
+        SetBluffCaller(bluffCallerId); // Track the bluff caller
+    
         string bluffCallerName = TurnManager.Instance.GetPlayerName(bluffCallerId);
         ulong lastPlayerId = TurnManager.Instance.GetLastPlayerId();
         string lastPlayerName = TurnManager.Instance.GetPlayerName(lastPlayerId);
-    
+
         // Send bluff call message to chat
         string bluffMessage = $"<b>{bluffCallerName}</b> called BLUFF on <b>{lastPlayerName}</b>!";
         Chat.Instance.SendMessageToClientsFromServer_Rpc(bluffMessage, "<color=red>Alert</color>");
+    
+        // Enable host buttons for resolution
+        EnableBluffResolutionButtonsClientRpc();
+    }
+
+    [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
+    private void EnableBluffResolutionButtonsClientRpc()
+    {
+        // Only enable for host
+        if (IsHost)
+        {
+            // Enable your transferTo and returnTo buttons
+            if (transferTo != null) transferTo.gameObject.SetActive(true);
+            if (returnTo != null) returnTo.gameObject.SetActive(true);
+        
+            // Add listeners if not already added
+            transferTo.onClick.RemoveAllListeners();
+            returnTo.onClick.RemoveAllListeners();
+        
+            transferTo.onClick.AddListener(GiveCardsToBluffCaller);
+            returnTo.onClick.AddListener(GiveCardsToLastPlayer);
+        }
     }
 
     [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
     private void RevealCardsServerRpc()
     {
-        if (!IsServer)
-        {
-            return;
-        }
-
         // Get the last player's ID from TurnManager
         ulong lastPlayerId = TurnManager.Instance.GetLastPlayerId();
 
@@ -133,6 +172,94 @@ public class GameManager : NetworkBehaviour
         {
             return true;
         }
+    }
+
+    public void GiveCardsToBluffCaller()
+    {
+        if (!IsServer) return;
+        
+        ulong lastPlayerId = TurnManager.Instance.GetLastPlayerId();
+        ulong bluffCallerId = GetBluffCallerId();
+        
+        TransferCardsToPlayerServerRpc(bluffCallerId);
+        
+        string lastPlayerName = TurnManager.Instance.GetPlayerName(lastPlayerId);
+        string bluffCallerName = TurnManager.Instance.GetPlayerName(bluffCallerId);
+        
+        string message = $"<b>{lastPlayerName} was not bluffing! All cards go to {bluffCallerName}</b>";
+        Chat.Instance.SendMessageToClientsFromServer_Rpc(message, "<color=red>System</color>");
+    }
+
+    public void GiveCardsToLastPlayer()
+    {
+        if (!IsServer) return;
+        
+        ulong lastPlayerId = TurnManager.Instance.GetLastPlayerId();
+        ulong bluffCallerId = GetBluffCallerId();
+        
+        TransferCardsToPlayerServerRpc(lastPlayerId);
+        
+        string lastPlayerName = TurnManager.Instance.GetPlayerName(lastPlayerId);
+        string bluffCallerName = TurnManager.Instance.GetPlayerName(bluffCallerId);
+        
+        string message = $"<b>{lastPlayerName} was bluffing!</b>";
+        Chat.Instance.SendMessageToClientsFromServer_Rpc(message, "<color=red>System</color>");
+    }
+
+    [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
+    private void TransferCardsToPlayerServerRpc(ulong targetPlayerId)
+    {
+        // Get all cards currently in playing area
+        List<Card> allCards = new List<Card>(PlayingArea.Instance.cardsPlayedList);
+        
+        foreach (Card card in allCards)
+        {
+            if (card != null)
+            {
+                // Transfer ownership to target player
+                card.NetworkObject.ChangeOwnership(targetPlayerId);
+                
+                // Add to target player's hand
+                PlayerManager targetPlayer = GetPlayerManagerById(targetPlayerId);
+                if (targetPlayer != null)
+                {
+                    PlayingArea.Instance.cardsPlayedList.Remove(card);
+                    targetPlayer.AddCardToHandClientRpc(card.NetworkObjectId);
+                }
+            }
+        }
+        
+        // Clear turn history after transfer
+        ClearPlayingAreaClientRpc();
+    }
+
+    [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Reliable)]
+    private void ClearPlayingAreaClientRpc()
+    {
+        PlayingArea.Instance.cardsPlayedList.Clear();
+    }
+
+    private PlayerManager GetPlayerManagerById(ulong clientId)
+    {
+        foreach (PlayerManager player in TurnManager.Instance.players)
+        {
+            if (player.OwnerClientId == clientId)
+            {
+                return player;
+            }
+        }
+        return null;
+    }
+
+    private ulong bluffCallerId;
+    public void SetBluffCaller(ulong callerId)
+    {
+        bluffCallerId = callerId;
+    }
+
+    private ulong GetBluffCallerId()
+    {
+        return bluffCallerId;
     }
     public bool InputFieldValidation()
     {

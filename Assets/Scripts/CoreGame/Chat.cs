@@ -35,17 +35,15 @@ public class Chat : NetworkBehaviour
         if (IsServer)
         {
             NetworkManager.OnClientDisconnectCallback += OnClientDisconnected;
-            NetworkManager.OnClientConnectedCallback += OnClientConnected; // 🔹 NEW
+            NetworkManager.OnClientConnectedCallback += OnClientConnected;
         }
         else if (IsClient && !IsHost)
         {
-            // 🔹 Tell the server our name as soon as we join
             string playerName = GameManager.Instance.playerNameInputField.text;
             NotifyServerOfJoinServerRpc(playerName);
         }
         else if (IsHost)
         {
-            // 🔹 Host counts as joining too
             string hostName = GameManager.Instance.playerNameInputField.text;
             PlayerJoinedWithNameClientRpc(NetworkManager.LocalClientId, hostName);
         }
@@ -144,7 +142,7 @@ public class Chat : NetworkBehaviour
     {
         if (message.Contains("You must play at least 2 cards at the start"))
         {
-            AddMessageToChat($"<color=#b30000><b>{playerName}, {message}</b></color>\n");
+            AddMessageToChat($"<color=#b30000>{playerName}, {message}</color>\n");
         }
         else
         {

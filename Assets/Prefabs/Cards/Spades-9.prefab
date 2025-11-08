@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 7545006416228073467}
   - component: {fileID: 6417636501587305691}
   - component: {fileID: 2864210812046407013}
-  - component: {fileID: 3756535995996670006}
   - component: {fileID: 141898689466240412}
+  - component: {fileID: 3756535995996670006}
   - component: {fileID: 616090669475424812}
   m_Layer: 6
   m_Name: Spades-9
@@ -30,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 7390295516948983595}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -6, y: 2, z: 0}
+  m_LocalPosition: {x: -6, y: 2, z: -2}
   m_LocalScale: {x: 1.2, y: 1.2, z: 1.2}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -79,7 +79,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 5
+  m_SortingOrder: 20
   m_Sprite: {fileID: 21300000, guid: 9d207a051e6b34543a10c2a7938bb205, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -137,23 +137,6 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.88, y: 1.24}
   m_EdgeRadius: 0
---- !u!114 &3756535995996670006
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7390295516948983595}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c65b2ef9cc2d1734ba03b0c53ae5ed86, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  suit: spade
-  rank: nine
-  frontSprite: {fileID: 21300000, guid: 9d207a051e6b34543a10c2a7938bb205, type: 2}
-  backSprite: {fileID: 21300000, guid: 0abfc60cf64e8bb469b4f89f5224ead2, type: 2}
 --- !u!114 &141898689466240412
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -179,6 +162,23 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &3756535995996670006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7390295516948983595}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c65b2ef9cc2d1734ba03b0c53ae5ed86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  suit: spade
+  rank: nine
+  frontSprite: {fileID: 21300000, guid: 9d207a051e6b34543a10c2a7938bb205, type: 2}
+  backSprite: {fileID: 21300000, guid: 0abfc60cf64e8bb469b4f89f5224ead2, type: 2}
 --- !u!114 &616090669475424812
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -209,9 +209,9 @@ MonoBehaviour:
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
-  SyncRotAngleX: 1
-  SyncRotAngleY: 1
-  SyncRotAngleZ: 1
+  SyncRotAngleX: 0
+  SyncRotAngleY: 0
+  SyncRotAngleZ: 0
   SyncScaleX: 1
   SyncScaleY: 1
   SyncScaleZ: 1
