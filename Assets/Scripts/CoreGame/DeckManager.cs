@@ -100,7 +100,6 @@ public class DeckManager : NetworkBehaviour
             {
                 if (cardIndex >= cardPrefabs.Count)
                 {
-                    Debug.LogWarning("Deck ran out of cards!");
                     return;
                 }
 
@@ -113,7 +112,6 @@ public class DeckManager : NetworkBehaviour
 
                 if (cardNetObj == null)
                 {
-                    Debug.LogError($"{cardPrefab.name} is missing a NetworkObject!");
                     Destroy(cardInstance);
                     continue;
                 }
@@ -122,7 +120,7 @@ public class DeckManager : NetworkBehaviour
                 spawnedCards.Add(cardInstance);
 
                 // Tell player to add to their hand UI
-                player.AddCardToHandClientRpc(cardNetObj.NetworkObjectId);
+                player.ServerAddCardToHand(cardNetObj.NetworkObjectId);
                 NetworkAudioPlayer.Instance.PlayDealCardsSoundServerRpc();
             }
         }

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: e1e4540ce4c5c524785bb6bbd483f3d2
+guid: 313d5ef322e97764c89fb16b59512363
 TrueTypeFontImporter:
   externalObjects: {}
   serializedVersion: 4
@@ -9,7 +9,7 @@ TrueTypeFontImporter:
   characterPadding: 1
   includeFontData: 1
   fontNames:
-  - Russo One
+  - Riope
   fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 0

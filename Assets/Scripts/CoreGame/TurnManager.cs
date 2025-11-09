@@ -2,7 +2,7 @@ using Unity.Netcode;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using System.Collections;
+using System.Threading.Tasks;
 
 public class TurnManager : NetworkBehaviour
 {
@@ -25,22 +25,32 @@ public class TurnManager : NetworkBehaviour
         }
     }
     
-    public override void OnNetworkSpawn()
+    public override async void OnNetworkSpawn()
     {
+        currentPlayerId.OnValueChanged += OnCurrentPlayerChanged;
+        
         if (IsServer)
         {
             currentPlayerId.Value = players[0].OwnerClientId;
         }
 
-        currentPlayerId.OnValueChanged += OnCurrentPlayerChanged;
-        StartCoroutine(UpdateTurnAfterDelay());
+        await InitializeTurnSystemAsync();
     }
     
-    private IEnumerator UpdateTurnAfterDelay()
+    private async Task InitializeTurnSystemAsync()
     {
-        yield return new WaitUntil(() => players.Count > 1);
-        yield return new WaitForSeconds(0.2f); // extra delay for playerName sync
+        await WaitUntilPlayersReadyAsync();
+        await Task.Delay(200);
+        
         UpdateTurnText(currentPlayerId.Value);
+    }
+    
+    private async Task WaitUntilPlayersReadyAsync()
+    {
+        while (players.Count < 2)
+        {
+            await Task.Delay(100);
+        }
     }
     
     private void OnCurrentPlayerChanged(ulong oldValue, ulong newValue)
@@ -56,7 +66,7 @@ public class TurnManager : NetworkBehaviour
     
     public string GetPlayerName(ulong playerId)
     {
-        // find the player by ClientId
+        // Find the player by ClientId
         foreach (var player in players)
         {
             if (player != null && playerId == player.OwnerClientId)

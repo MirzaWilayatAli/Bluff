@@ -7,8 +7,8 @@ public class PlayingArea : NetworkBehaviour
 {
     public static PlayingArea Instance;
     public List<Card> cardsPlayedList = new List<Card>();
-    [SerializeField] private Collider2D playingAreaCollider;
-    private List<TurnEntry> turnHistory = new List<TurnEntry>();
+    public Collider2D playingAreaCollider;
+    public List<TurnEntry> turnHistory = new List<TurnEntry>();
 
     private void Awake()
     {
@@ -20,7 +20,7 @@ public class PlayingArea : NetworkBehaviour
     }
 
     [Serializable]
-    private class TurnEntry
+    public class TurnEntry
     {
         public ulong clientId;
         public List<Card> cards = new List<Card>();

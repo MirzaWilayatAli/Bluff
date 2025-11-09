@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 0b49b1ef444fcbc41b616b987139e41a
+guid: b0be83ead59ba1643b4c6b84f16cc29f
 TrueTypeFontImporter:
   externalObjects: {}
   serializedVersion: 4
@@ -9,7 +9,7 @@ TrueTypeFontImporter:
   characterPadding: 1
   includeFontData: 1
   fontNames:
-  - ComicNeueSansID
+  - Consola Mono
   fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 0
