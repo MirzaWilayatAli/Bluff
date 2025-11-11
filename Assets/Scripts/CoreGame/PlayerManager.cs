@@ -103,6 +103,8 @@ public class PlayerManager : NetworkBehaviour
         if (!IsOwner) return;
 
         Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+        // Keep whatever Z was originally set in the scene
         mouseWorld.z = 0f;
 
         if (Input.GetMouseButtonDown(0))
@@ -113,26 +115,23 @@ public class PlayerManager : NetworkBehaviour
                 selectedCard = hit.collider.gameObject;
                 originalCardPosition = selectedCard.transform.position;
                 grabOffset = selectedCard.transform.position - mouseWorld;
-                
-                // Bring card to front while dragging
-                selectedCard.transform.position = new Vector3(selectedCard.transform.position.x, selectedCard.transform.position.y, -1f);
             }
         }
 
         if (Input.GetMouseButton(0) && selectedCard != null)
         {
-            selectedCard.transform.position = mouseWorld + grabOffset;
+            Vector3 newPos = mouseWorld + grabOffset;
+            newPos.z = selectedCard.transform.position.z; // keep its Inspector z (e.g. –2)
+            selectedCard.transform.position = newPos;
         }
 
         if (Input.GetMouseButtonUp(0) && selectedCard != null)
         {
-            // Reset Z position
-            selectedCard.transform.position = new Vector3(selectedCard.transform.position.x, selectedCard.transform.position.y, 0f);
-            
             NetworkAudioPlayer.Instance.PlayCardsSoundServerRpc();
             selectedCard = null;
         }
     }
+
 
     public void OnPlayButtonClicked()
     {
@@ -141,12 +140,6 @@ public class PlayerManager : NetworkBehaviour
 
         // Get cards that are currently in the playing area position
         List<ulong> cardsInPlayingArea = GetCardsInPlayingAreaPosition();
-        
-        if (cardsInPlayingArea.Count == 0)
-        {
-            return;
-        }
-        
         PlayCardsServerRpc(cardsInPlayingArea.ToArray());
     }
 
@@ -183,6 +176,14 @@ public class PlayerManager : NetworkBehaviour
     [Rpc(SendTo.Server, RequireOwnership = false, Delivery = RpcDelivery.Reliable)]
     private void PlayCardsServerRpc(ulong[] cardIds)
     {
+        if (cardIds == null || cardIds.Length == 0)
+        {
+            PlayingArea.Instance.AddEmptyTurnEntry(OwnerClientId);
+            Chat.Instance.SendMessageToServerFromClient_Rpc($"{playerNameComponent.playerName.Value} skipped their turn.", "<color=red>SYSTEM</color>");
+            TurnManager.Instance.AdvanceTurnServerRpc();
+            return;
+        }
+        
         if (!GameManager.Instance.CheckEnoughCardsWerePlayed(cardIds.Length))
         {
             Chat.Instance.SendMessageToServerFromClient_Rpc("You must play at least 2 cards at the start", playerNameComponent.playerName.Value.ToString());

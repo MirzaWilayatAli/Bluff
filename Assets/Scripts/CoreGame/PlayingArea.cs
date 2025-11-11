@@ -51,31 +51,44 @@ public class PlayingArea : NetworkBehaviour
 
         TurnEntry lastEntry = turnHistory.Count > 0 ? turnHistory[turnHistory.Count - 1] : null;
 
-        if (lastEntry != null && lastEntry.clientId == clientId)
+        if (lastEntry == null || lastEntry.clientId != clientId || lastEntry.cards.Count == 0)
+        {
+            TurnEntry newEntry = new TurnEntry(clientId);
+            newEntry.cards.Add(card);
+            turnHistory.Add(newEntry);
+        }
+        else
         {
             if (!lastEntry.cards.Contains(card))
             {
                 lastEntry.cards.Add(card);
             }
         }
-        else
-        {
-            TurnEntry newEntry = new TurnEntry(clientId);
-            newEntry.cards.Add(card);
-            turnHistory.Add(newEntry);
-        }
     }
+
 
     public List<Card> GetLastTurnCardsForClient(ulong clientId)
     {
         for (int i = turnHistory.Count - 1; i >= 0; i--)
         {
-            if (turnHistory[i].clientId == clientId)
+            TurnEntry entry = turnHistory[i];
+
+            if (entry.clientId == clientId)
             {
-                return new List<Card>(turnHistory[i].cards);
+                if (i == turnHistory.Count - 1 || turnHistory[i + 1].clientId != clientId)
+                {
+                    return new List<Card>(entry.cards);
+                }
             }
         }
-
         return new List<Card>();
     }
+    
+    public void AddEmptyTurnEntry(ulong clientId)
+    {
+        TurnEntry newEntry = new TurnEntry(clientId);
+        turnHistory.Add(newEntry);
+    }
+
+    
 }

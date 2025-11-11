@@ -17,7 +17,8 @@ public class GameManager : NetworkBehaviour
     public Button joinButton;
     public Button transferTo;
     public Button returnTo;
-
+    public Button yesButton;
+    
     public TMP_InputField playerNameInputField;
     public float flashDuration = 0.5f;
     public int flashCount = 2;
@@ -26,9 +27,10 @@ public class GameManager : NetworkBehaviour
 
     public GameObject mainPanel;
     public GameObject joinPanel;
-    public GameObject settingsPanel;
     public GameObject hostPanel;
-
+    public GameObject confirmationMsgPanel;
+    public TextMeshProUGUI confirmationMsg;
+    
     private NetworkVariable<ulong> bluffCallerId = new NetworkVariable<ulong>(ulong.MaxValue);
 
     private void Awake()
@@ -50,9 +52,9 @@ public class GameManager : NetworkBehaviour
         originalScale = playerNameInputField.transform.localScale;
         revealButton.onClick.AddListener(OnRevealButtonClick);
         joinButton.onClick.AddListener(OnJoinButtonClicked);
-        callBluffButton.onClick.AddListener(OnBluffButtonClicked); 
-        transferTo.onClick.AddListener(GiveCardsToBluffCaller);
-        returnTo.onClick.AddListener(GiveCardsToLastPlayer);
+        callBluffButton.onClick.AddListener(OnBluffButtonClicked);
+        transferTo.onClick.AddListener(ChangeListenerToTransfer);
+        returnTo.onClick.AddListener(ChangeListenerToReturn);
     }
     
     public override void OnNetworkSpawn()
@@ -73,7 +75,6 @@ public class GameManager : NetworkBehaviour
         }
         else
         {
-            // Only disable if not host
             revealButton.interactable = false;
         }
     }
@@ -86,6 +87,35 @@ public class GameManager : NetworkBehaviour
             joinPanel.SetActive(true);
         }
     }
+
+    public void ChangeListenerToTransfer()
+    {
+        yesButton.onClick.RemoveAllListeners();
+        yesButton.onClick.AddListener(GiveCardsToBluffCaller);
+
+        // Get names
+        string bluffCallerName = TurnManager.Instance.GetPlayerName(bluffCallerId.Value);
+        string lastPlayerName = TurnManager.Instance.GetPlayerName(TurnManager.Instance.GetLastPlayerId());
+
+        // Confirmation message for when the bluff caller was wrong (they get all cards)
+        confirmationMsg.text = $"Are you sure you want to give all cards to <b>{bluffCallerName}</b>?";
+        confirmationMsgPanel.SetActive(true);
+    }
+
+
+    public void ChangeListenerToReturn()
+    {
+        yesButton.onClick.RemoveAllListeners();
+        yesButton.onClick.AddListener(GiveCardsToLastPlayer);
+
+        // Get names
+        string lastPlayerName = TurnManager.Instance.GetPlayerName(TurnManager.Instance.GetLastPlayerId());
+
+        // Confirmation message for when the last player was bluffing
+        confirmationMsg.text = $"Are you sure you want to return the cards to <b>{lastPlayerName}</b>?";
+        confirmationMsgPanel.SetActive(true);
+    }
+
 
     [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
     private void CallBluffServerRpc(RpcParams rpcParams = default)
@@ -166,6 +196,9 @@ public class GameManager : NetworkBehaviour
         
         // Reset bluff caller
         bluffCallerId.Value = ulong.MaxValue;
+        
+        // close the confirmation panel after transferring cards
+        confirmationMsgPanel.SetActive(false);
     }
 
     public void GiveCardsToLastPlayer()
@@ -180,6 +213,9 @@ public class GameManager : NetworkBehaviour
         
         // Reset bluff caller
         bluffCallerId.Value = ulong.MaxValue;
+        
+        // close the confirmation panel after returning cards
+        confirmationMsgPanel.SetActive(false);
     }
 
     [Rpc(SendTo.Server, Delivery = RpcDelivery.Reliable)]
