@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 6413785881765757693}
   - component: {fileID: 5346930750263787253}
   - component: {fileID: 7178275809231633140}
-  - component: {fileID: 1671017953041388476}
   - component: {fileID: 109382430784622627}
+  - component: {fileID: 1671017953041388476}
   - component: {fileID: 5844399929747524521}
   m_Layer: 6
   m_Name: Club-11
@@ -137,23 +137,6 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.88, y: 1.24}
   m_EdgeRadius: 0
---- !u!114 &1671017953041388476
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6863809506041329962}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c65b2ef9cc2d1734ba03b0c53ae5ed86, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  suit: club
-  rank: jack
-  frontSprite: {fileID: 21300000, guid: f9415fae2098fe0469f0c4fbfe409da3, type: 2}
-  backSprite: {fileID: 21300000, guid: 0abfc60cf64e8bb469b4f89f5224ead2, type: 2}
 --- !u!114 &109382430784622627
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -179,6 +162,23 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &1671017953041388476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6863809506041329962}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c65b2ef9cc2d1734ba03b0c53ae5ed86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  suit: club
+  rank: jack
+  frontSprite: {fileID: 21300000, guid: f9415fae2098fe0469f0c4fbfe409da3, type: 2}
+  backSprite: {fileID: 21300000, guid: 0abfc60cf64e8bb469b4f89f5224ead2, type: 2}
 --- !u!114 &5844399929747524521
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -208,14 +208,14 @@ MonoBehaviour:
   UseUnreliableDeltas: 0
   SyncPositionX: 1
   SyncPositionY: 1
-  SyncPositionZ: 1
+  SyncPositionZ: 0
   SyncRotAngleX: 0
   SyncRotAngleY: 0
   SyncRotAngleZ: 0
   SyncScaleX: 1
   SyncScaleY: 1
-  SyncScaleZ: 1
-  PositionThreshold: 0.001
+  SyncScaleZ: 0
+  PositionThreshold: 0.01
   RotAngleThreshold: 0.01
   ScaleThreshold: 0.01
   UseQuaternionSynchronization: 0
