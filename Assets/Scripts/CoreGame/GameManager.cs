@@ -14,22 +14,18 @@ public class GameManager : NetworkBehaviour
     public Button playButton;
     public Button revealButton;
     public Button callBluffButton;
-    public Button joinButton;
     public Button transferTo;
     public Button returnTo;
     public Button yesButton;
-    
-    public TMP_InputField playerNameInputField;
-    public float flashDuration = 0.5f;
-    public int flashCount = 2;
-    private Color originalColor;
-    private Vector3 originalScale;
 
     public GameObject mainPanel;
-    public GameObject joinPanel;
     public GameObject hostPanel;
     public GameObject confirmationMsgPanel;
     public TextMeshProUGUI confirmationMsg;
+    
+    public TMP_InputField playerNameInputField;
+    [SerializeField] private float flashDuration = 0.5f;
+    [SerializeField] private int flashCount = 2;
     
     private NetworkVariable<ulong> bluffCallerId = new NetworkVariable<ulong>(ulong.MaxValue);
 
@@ -48,10 +44,7 @@ public class GameManager : NetworkBehaviour
 
     private void Start()
     {
-        originalColor = playerNameInputField.image.color;
-        originalScale = playerNameInputField.transform.localScale;
         revealButton.onClick.AddListener(OnRevealButtonClick);
-        joinButton.onClick.AddListener(OnJoinButtonClicked);
         callBluffButton.onClick.AddListener(OnBluffButtonClicked);
         transferTo.onClick.AddListener(ChangeListenerToTransfer);
         returnTo.onClick.AddListener(ChangeListenerToReturn);
@@ -76,15 +69,6 @@ public class GameManager : NetworkBehaviour
         else
         {
             revealButton.interactable = false;
-        }
-    }
-
-    public void OnJoinButtonClicked()
-    {
-        if (!InputFieldValidation())
-        {
-            mainPanel.SetActive(false);
-            joinPanel.SetActive(true);
         }
     }
 
@@ -302,7 +286,6 @@ public class GameManager : NetworkBehaviour
         }
         return null;
     }
-
     public bool InputFieldValidation()
     {
         if (string.IsNullOrEmpty(playerNameInputField.text))
@@ -314,18 +297,16 @@ public class GameManager : NetworkBehaviour
         return false;
     }
 
-    private IEnumerator FlashAnimation()
+    public IEnumerator FlashAnimation()
     {
         for (int i = 0; i < flashCount; i++)
         {
             // Flash red and scale up
             playerNameInputField.image.color = Color.red;
-            playerNameInputField.transform.localScale = originalScale * 1.2f;
             yield return new WaitForSeconds(flashDuration / 2);
 
             // Return to normal
-            playerNameInputField.image.color = originalColor;
-            playerNameInputField.transform.localScale = originalScale;
+            playerNameInputField.image.color = Color.white;
             yield return new WaitForSeconds(flashDuration / 2);
         }
     }

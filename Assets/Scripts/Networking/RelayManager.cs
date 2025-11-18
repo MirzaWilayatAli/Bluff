@@ -1,122 +1,195 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
-using Unity.Services.Authentication;
+using TMPro;
+using UnityEngine.UI;
+
 using Unity.Services.Core;
+using Unity.Services.Authentication;
+using Unity.Services.Lobbies;
+using Unity.Services.Lobbies.Models;
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
-using UnityEngine.UI;
 
 public class RelayManager : MonoBehaviour
 {
-    [SerializeField] Button hostButton;
-    [SerializeField] Button joinButton;
-    [SerializeField] Button disconnectButton;
-    [SerializeField] TextMeshProUGUI joinCodeText;
-    [SerializeField] TMP_InputField joinInput;
-    [SerializeField] GameObject loadingScreenPanel;
+    [Header("UI")]
+    [SerializeField] private Button hostButton;
+    [SerializeField] private Button joinButton;
+    [SerializeField] private Button disconnectButton;
+    [SerializeField] private Button  leaveButton;
+    [SerializeField] private TextMeshProUGUI joinCodeText;
+    [SerializeField] private GameObject loadingScreenPanel;
+    [SerializeField] private GameObject mainPanel;
+
+    private Lobby currentLobby; 
+    private float heartbeatTimer;
+
+    private string lobbyName = "Will's Lobby";
+    private int maxPlayers = 4;
 
     async void Start()
     {
         await UnityServices.InitializeAsync();
         await AuthenticationService.Instance.SignInAnonymouslyAsync();
-        
-        hostButton.onClick.AddListener(OnHostButtonClick);
-        joinButton.onClick.AddListener(OnJoinButtonClicked);
-        disconnectButton.onClick.AddListener(OnDisconnectButtonClicked);
-        
+
+        hostButton.onClick.AddListener(OnHost);
+        joinButton.onClick.AddListener(OnJoin);
+        disconnectButton.onClick.AddListener(OnDisconnect);
+        leaveButton.onClick.AddListener(LeaveGame);
+
         loadingScreenPanel.SetActive(false);
-        
-        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-        NetworkManager.Singleton.OnServerStarted += OnServerStarted;
+        mainPanel.SetActive(true);
     }
 
-    void OnDestroy()
+    void Update()
     {
-        if (NetworkManager.Singleton != null)
-        {
-            NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
-            NetworkManager.Singleton.OnServerStarted -= OnServerStarted;
-        }
-    }
-
-    void OnHostButtonClick()
-    {
-        if (!GameManager.Instance.InputFieldValidation())
-        {
-            CreateRelay();
-        }
-    }
-
-    void OnJoinButtonClicked()
-    {
-        if (!string.IsNullOrEmpty(joinInput.text))
-        {
-            JoinRelay(joinInput.text);
-        }
-    }
-
-    void OnDisconnectButtonClicked()
-    {
-        StopClient();
-    }
-
-    async void CreateRelay()
-    {
-        loadingScreenPanel.SetActive(true);
-        Allocation allocation = await RelayService.Instance.CreateAllocationAsync(4);
-        string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
-            
-        joinCodeText.text = "Room Code: " + joinCode;
-
-        NetworkManager.Singleton.GetComponent<UnityTransport>()
-            .SetRelayServerData(AllocationUtils.ToRelayServerData(allocation, "udp"));
-
-        NetworkManager.Singleton.StartHost();
-        loadingScreenPanel.SetActive(false);
-    }
-
-    async void JoinRelay(string joinCode)
-    {
-        loadingScreenPanel.SetActive(true);
-        JoinAllocation joinAllocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
-        NetworkManager.Singleton.GetComponent<UnityTransport>()
-            .SetRelayServerData(AllocationUtils.ToRelayServerData(joinAllocation, "udp")); 
-        NetworkManager.Singleton.StartClient(); 
-        loadingScreenPanel.SetActive(false);
-    }
-
-    public void StopClient()
-    {
-        if (NetworkManager.Singleton.IsClient)
-        {
-            NetworkManager.Singleton.Shutdown();
-            joinButton.interactable = true;
-            hostButton.interactable = true;
-            loadingScreenPanel.SetActive(false);
-        }
+        HandleLobbyHeartbeat();
     }
     
-    private void OnClientConnected(ulong clientId)
+    private async void OnHost()
     {
-        loadingScreenPanel.SetActive(false);
-        
-        string playerName = GameManager.Instance.playerNameInputField.text;
-        if (Chat.Instance != null)
+        if (GameManager.Instance.InputFieldValidation())
         {
-            Chat.Instance.PlayerJoinedWithNameClientRpc(clientId, playerName);
+            StartCoroutine(GameManager.Instance.FlashAnimation());
+            return;
         }
+
+        loadingScreenPanel.SetActive(true);
+
+        Allocation allocation = await RelayService.Instance.CreateAllocationAsync(maxPlayers);
+        string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
+
+        joinCodeText.text = "Room Code: " + joinCode;
+
+        var lobbyOptions = new CreateLobbyOptions()
+        {
+            Data = new Dictionary<string, DataObject>()
+            {
+                { "joinCode", new DataObject(DataObject.VisibilityOptions.Public, joinCode) }
+            }
+        };
+
+        currentLobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, maxPlayers, lobbyOptions);
+
+        var relayData = AllocationUtils.ToRelayServerData(allocation, "udp");
+        NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayData);
+
+        NetworkManager.Singleton.StartHost();
+
+        loadingScreenPanel.SetActive(false);
+        mainPanel.SetActive(false);
+    }
+    
+    private async void OnJoin()
+    {
+        if (GameManager.Instance.InputFieldValidation())
+        {
+            StartCoroutine(GameManager.Instance.FlashAnimation());
+            return;
+        }
+
+        loadingScreenPanel.SetActive(true);
+
+        QueryLobbiesOptions queryOptions = new QueryLobbiesOptions()
+        {
+            Count = 1,
+            Filters = new List<QueryFilter>()
+            {
+                new QueryFilter(
+                    field: QueryFilter.FieldOptions.Name,
+                    op: QueryFilter.OpOptions.EQ,
+                    value: lobbyName)
+            }
+        };
+
+        QueryResponse response = await LobbyService.Instance.QueryLobbiesAsync(queryOptions);
+
+        if (response.Results.Count == 0)
+        {
+            loadingScreenPanel.SetActive(false);
+            return;
+        }
+
+        Lobby foundLobby = response.Results[0];
+
+        string joinCode = foundLobby.Data["joinCode"].Value;
+
+        JoinAllocation joinAlloc = await RelayService.Instance.JoinAllocationAsync(joinCode);
+
+        currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(foundLobby.Id);
+
+        var relayData = AllocationUtils.ToRelayServerData(joinAlloc, "udp");
+        NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayData);
+
+        NetworkManager.Singleton.StartClient();
+
+        loadingScreenPanel.SetActive(false);
+        mainPanel.SetActive(false);
     }
 
-    private void OnServerStarted()
+    private async void OnDisconnect()
     {
-        loadingScreenPanel.SetActive(false);
-        
-        string playerName = GameManager.Instance.playerNameInputField.text;
-        if (Chat.Instance != null)
+        if (currentLobby != null)
         {
-            Chat.Instance.PlayerJoinedWithNameClientRpc(NetworkManager.Singleton.LocalClientId, playerName);
+            if (currentLobby.HostId == AuthenticationService.Instance.PlayerId)
+            {
+                await LobbyService.Instance.DeleteLobbyAsync(currentLobby.Id);
+            }
+            else
+            {
+                await LobbyService.Instance.RemovePlayerAsync(currentLobby.Id, AuthenticationService.Instance.PlayerId);
+            }
+
+            currentLobby = null;
+        }
+        NetworkManager.Singleton.Shutdown();
+
+        mainPanel.SetActive(true);
+        loadingScreenPanel.SetActive(false);
+    }
+    
+    public async void LeaveGame()
+    {
+        if (currentLobby != null)
+        {
+            if (currentLobby.HostId == AuthenticationService.Instance.PlayerId)
+            {
+                await LobbyService.Instance.DeleteLobbyAsync(currentLobby.Id);
+            }
+            else
+            {
+                await LobbyService.Instance.RemovePlayerAsync(currentLobby.Id, AuthenticationService.Instance.PlayerId);
+            }
+            currentLobby = null;
+        }
+        
+        if (NetworkManager.Singleton.IsHost)
+        {
+            NetworkManager.Singleton.Shutdown();
+        }
+        else if (NetworkManager.Singleton.IsClient)
+        {
+            NetworkManager.Singleton.Shutdown();
+        }
+        
+        mainPanel.SetActive(true);
+        loadingScreenPanel.SetActive(false);
+    }
+    
+    private async void HandleLobbyHeartbeat()
+    {
+        if (currentLobby == null || currentLobby.HostId != AuthenticationService.Instance.PlayerId)
+            return;
+
+        heartbeatTimer -= Time.deltaTime;
+
+        if (heartbeatTimer <= 0f)
+        {
+            heartbeatTimer = 15f;
+            await LobbyService.Instance.SendHeartbeatPingAsync(currentLobby.Id);
         }
     }
 }
