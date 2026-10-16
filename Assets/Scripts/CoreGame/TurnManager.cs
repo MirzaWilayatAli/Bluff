@@ -47,7 +47,7 @@ public class TurnManager : NetworkBehaviour
     
     private async Task WaitUntilPlayersReadyAsync()
     {
-        while (players.Count < 2)
+        while (players.Count < 3)
         {
             await Task.Delay(100);
         }

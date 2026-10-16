@@ -48,6 +48,8 @@ public class GameManager : NetworkBehaviour
         callBluffButton.onClick.AddListener(OnBluffButtonClicked);
         transferTo.onClick.AddListener(ChangeListenerToTransfer);
         returnTo.onClick.AddListener(ChangeListenerToReturn);
+        
+        Application.targetFrameRate = 60;
     }
     
     public override void OnNetworkSpawn()
